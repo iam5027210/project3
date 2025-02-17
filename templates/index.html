@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재생 목록</title>
+    <style>
+
+
+        /* ✅ 전체 배경을 완전 블랙으로 변경 */
+        body { 
+            font-family: 'Arial', sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #000000; /* 완전 블랙 */
+            color: #E0E0E0; /* 부드러운 흰색 (눈부심 방지) */
+        }
+
+        /* ✅ 메인 제목 스타일 (더 극장 같은 분위기) */
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #FFFFFF;
+            text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3); /* 은은한 네온 조명 느낌 */
+            margin-bottom: 30px;
+        }
+
+        /* ✅ 비디오 목록 (최적화된 레이아웃) */
+        .video-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+            padding: 20px; 
+            justify-content: center;
+        }
+
+        /* ✅ 비디오 카드 스타일 (더 고급스럽고 부드러운 느낌) */
+        .video { 
+            background: rgb(255, 255, 255); /* 블랙 배경 위에 약간의 투명감 추가 */
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); /* 부드러운 극장 조명 효과 */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s;
+        }
+
+        /* ✅ 마우스를 올릴 때 부드러운 조명 효과 추가 */
+        .video:hover {
+            transform: scale(1.05); /* 살짝 확대 */
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2); /* 부드러운 네온 조명 */
+        }
+
+        /* ✅ 비디오 썸네일 스타일 (더 세련되게) */
+        .video img { 
+            width: 100%; 
+            border-radius: 8px; 
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        /* ✅ 썸네일에 마우스를 올렸을 때 살짝 어두워지는 효과 */
+        .video:hover img {
+            opacity: 0.85; 
+            transform: scale(1.02); /* 약간 확대 */
+        }
+
+        /* ✅ 비디오 제목 스타일 (눈이 편한 색상과 입체감 추가) */
+        .video p { 
+            font-size: 16px; 
+            font-weight: 600; 
+            margin-top: 10px; 
+            color: #030303; /* 부드러운 흰색 (눈에 덜 피로함) */
+       
+        }
+
+
+
+
+    </style>
+</head>
+<body>
+    <h1>표정으로 알아보는 스트리밍 찐반응</h1>
+    <div class="video-container">
+        {% for video in videos %}
+            <div class="video">
+                {% set raw_url = video.get('url', '') %}
+                {% if 'watch?v=' in raw_url %}
+                    {% set video_id = raw_url.split('?v=')[-1].split('&')[0] %}
+                {% elif '/shorts/' in raw_url %}
+                    {% set video_id = raw_url.split('/shorts/')[-1].split('?')[0] %}
+                {% else %}
+                    {% set video_id = raw_url.split('/')[-1].split('?')[0] %}
+                {% endif %}
+                <a href="/video/{{ video_id }}">
+                    <img src="https://img.youtube.com/vi/{{ video_id }}/0.jpg" alt="{{ video.get('title', 'No Title') }}">
+                    <p>{{ video.get('title', video_id) }}</p>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

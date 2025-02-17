@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaceMesh 랜드마크 트래커</title>
+    
+    <!-- TensorFlow.js & MediaPipe 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+
+    <style>
+        body {
+            background-color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .container {
+            position: relative;
+            display: inline-block;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        #coords {
+            font-size: 14px;
+            text-align: left;
+            margin: 20px auto;
+            width: 50%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>FaceMesh 랜드마크 트래커 (배경 제거 + 랜드마크 표시)</h1>
+    <div class="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="output"></canvas>
+    </div>
+    <button id="saveNeutral">무표정 좌표 저장</button>
+    <p class="info">표정을 지으면 좌표 변화값이 아래에 표시됩니다.</p>
+    <div id="coords"></div>
+
+    <script>
+        let model, video, canvas, ctx, segmentationModel;
+        let neutralFace = null;  // 무표정 기준 좌표 저장용
+
+        // 중요한 얼굴 랜드마크 (눈, 입, 얼굴 근육)
+        const keyLandmarks = {
+            "왼쪽 눈": [33, 160, 159, 158, 157, 173],
+            "오른쪽 눈": [263, 387, 386, 385, 384, 373],
+            "입": [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308],
+            "눈썹": [70, 63, 105, 66, 107, 336, 296, 334, 293, 300]
+        };
+
+        async function setupCamera() {
+            video = document.getElementById("video");
+            video.width = 640;
+            video.height = 480;
+            return new Promise((resolve, reject) => {
+                navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                    video.srcObject = stream;
+                    video.onloadedmetadata = () => resolve(video);
+                }).catch(reject);
+            });
+        }
+
+        async function loadModels() {
+            model = await faceLandmarksDetection.createDetector(faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh);
+            segmentationModel = new SelfieSegmentation({ modelSelection: 1 });
+            await segmentationModel.initialize();
+        }
+
+        async function detectFace() {
+            const predictions = await model.estimateFaces({ input: video });
+
+            // 배경 제거를 위한 세그멘테이션 실행
+            const segmentation = await segmentationModel.segmentPeople(video);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 배경을 완전한 하얀색으로 설정
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (segmentation && segmentation.length > 0) {
+                const personMask = segmentation[0].mask;
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = imageData.data;
+
+                for (let i = 0; i < pixels.length; i += 4) {
+                    if (personMask[i] > 0.5) { // 사람 영역이면
+                        pixels[i] = pixels[i]; // R
+                        pixels[i + 1] = pixels[i + 1]; // G
+                        pixels[i + 2] = pixels[i + 2]; // B
+                    } else { // 배경이면 흰색으로 변경
+                        pixels[i] = 255;
+                        pixels[i + 1] = 255;
+                        pixels[i + 2] = 255;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+
+            if (predictions.length > 0) {
+                let landmarks = predictions[0].keypoints;
+                
+                // 좌표 변화값 계산
+                let diffText = "";
+                if (neutralFace) {
+                    Object.keys(keyLandmarks).forEach((region) => {
+                        diffText += `<strong>${region}</strong><br>`;
+                        keyLandmarks[region].forEach((index) => {
+                            let dx = Math.round(landmarks[index].x - neutralFace[index].x);
+                            let dy = Math.round(landmarks[index].y - neutralFace[index].y);
+                            diffText += `점 ${index}: ΔX=${dx}, ΔY=${dy}<br>`;
+                        });
+                        diffText += "<br>";
+                    });
+                }
+
+                // HTML에 변화 좌표 표시
+                document.getElementById("coords").innerHTML = diffText;
+
+                // 얼굴 랜드마크 점 표시
+                landmarks.forEach((point) => {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+                    ctx.fillStyle = "red";
+                    ctx.fill();
+                });
+            }
+            requestAnimationFrame(detectFace);
+        }
+
+        async function main() {
+            await setupCamera();
+            await loadModels();
+
+            canvas = document.getElementById("output");
+            ctx = canvas.getContext("2d");
+            canvas.width = video.width;
+            canvas.height = video.height;
+
+            detectFace();
+        }
+
+        document.getElementById("saveNeutral").addEventListener("click", async () => {
+            const predictions = await model.estimateFaces({ input: video });
+            if (predictions.length > 0) {
+                neutralFace = predictions[0].keypoints.map(p => ({ x: p.x, y: p.y }));
+                alert("무표정 좌표가 저장되었습니다!");
+            }
+        });
+
+        main();
+    </script>
+</body>
+</html>

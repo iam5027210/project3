@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>얼굴 랜드마크 변화 감지</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video, canvas { border: 1px solid black; display: block; margin: 10px auto; }
+        #landmark-values { width: 80%; margin: auto; text-align: left; background: #f8f8f8; padding: 10px; border-radius: 8px; }
+        button { margin: 10px; padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>얼굴 랜드마크 변화 감지</h1>
+    <video id="video" autoplay playsinline width="640" height="480"></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <button onclick="setBaseline()">무표정 값 저장</button>
+    <h3>감지된 변화 (기준값, 현재값)</h3>
+    <div id="landmark-values"></div>
+
+    <script>
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const landmarkDisplay = document.getElementById('landmark-values');
+        let baselineLandmarks = null;
+
+        const keyLandmarks = {
+            "입 왼쪽": 61, "입 오른쪽": 291,
+            "입 위쪽": 13, "입 아래쪽": 14,
+            "눈 왼쪽 바깥": 33, "눈 왼쪽 안쪽": 133,
+            "눈 왼쪽 위": 159, "눈 왼쪽 아래": 145,
+            "눈 오른쪽 바깥": 263, "눈 오른쪽 안쪽": 362,
+            "눈 오른쪽 위": 386, "눈 오른쪽 아래": 374
+        };
+
+        function setBaseline() {
+            if (!lastLandmarks) return;
+            baselineLandmarks = { ...lastLandmarks };
+            alert("무표정 기준값이 설정되었습니다!");
+        }
+
+        let lastLandmarks = null;
+        async function onResults(results) {
+            if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) return;
+            
+            const currentLandmarks = results.multiFaceLandmarks[0];
+            lastLandmarks = {};
+            let changes = [];
+
+            for (let [part, index] of Object.entries(keyLandmarks)) {
+                const curr = currentLandmarks[index];
+                lastLandmarks[index] = { x: curr.x, y: curr.y };
+                
+                if (baselineLandmarks) {
+                    const base = baselineLandmarks[index];
+                    const diffX = (curr.x - base.x).toFixed(3);
+                    const diffY = (curr.y - base.y).toFixed(3);
+                    changes.push(`${part}: (${base.x.toFixed(3)}, ${base.y.toFixed(3)}) → (${curr.x.toFixed(3)}, ${curr.y.toFixed(3)})`);
+                }
+            }
+
+            if (changes.length > 0) {
+                landmarkDisplay.innerHTML = changes.join('<br>');
+            }
+
+            // 캔버스에 얼굴 랜드마크 그리기
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.fillStyle = "red";
+            for (let index of Object.values(keyLandmarks)) {
+                const x = currentLandmarks[index].x * canvasElement.width;
+                const y = currentLandmarks[index].y * canvasElement.height;
+                canvasCtx.beginPath();
+                canvasCtx.arc(x, y, 3, 0, 2 * Math.PI);
+                canvasCtx.fill();
+            }
+        }
+
+        const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
+        faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        faceMesh.onResults(onResults);
+
+        const camera = new Camera(videoElement, { onFrame: async () => await faceMesh.send({ image: videoElement }), width: 640, height: 480 });
+        camera.start();
+    </script>
+</body>
+</html>

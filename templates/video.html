@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영상 재생</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #000000; /* 완전 블랙 */
+        }
+
+        .video-container {
+            margin-top: 20px;
+        }
+
+        .back-link {
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+            /* ✅ 중앙 정렬 */
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        iframe {
+            width: 70%;
+            height: 450px;
+            border: none;
+        }
+
+        .face-detection-container {
+        position: fixed;
+        top: 0px; /* 화면 상단 */
+        right: 0px; /* 오른쪽 상단 */
+        width: 180px; /* 적절한 크기로 조절 */
+        height: auto;
+        z-index: 1000;
+        background: rgba(223, 222, 222, 0.7); /* 반투명 배경 */
+        border-radius: 5px;
+        padding: 5px;
+    }
+
+    .face-detection-container img {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
+
+        .chatbot-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 340px;
+            height: 590px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            overflow: hidden;
+            /* ✅ 내부 요소가 넘쳐도 크기 유지 */
+        }
+
+        .chatbot-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            max-height: 590px;
+            /* ✅ iframe 높이를 강제 고정 */
+            overflow: hidden;
+            /* ✅ 내부 요소가 크기를 변경하지 못하도록 설정 */
+        }
+
+        .chatbot-close {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 30px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <h1>영상 재생</h1>
+    <div class="video-container">
+        <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?enablejsapi=1" frameborder="0"
+            allowfullscreen>
+        </iframe>
+
+    </div>
+    <!-- ✅ 얼굴 인식 화면 (크기 작게 조정) -->
+    <div class="face-detection-container">
+   
+        <img src="{{ url_for('video_feed') }}">
+    </div>
+
+
+    <!-- ✅ 챗봇 컨테이너 (고정 위치) -->
+    <div class="chatbot-container" id="chatbot">
+        <span class="chatbot-close" onclick="closeChatbot()">×</span>
+
+        <iframe id="chatbotFrame" src="/chatbot_page" width="340" height="590" style="border: none;"></iframe>
+    </div>
+
+
+    <a class="back-link" href="/">돌아가기</a>
+    <script>
+        function onYouTubeIframeAPIReady() {
+            console.log("📢 YouTube API 로드됨");
+            var player = new YT.Player('videoFrame', {
+                events: {
+                    'onStateChange': function (event) {
+                        console.log("🎥 유튜브 상태 변경: ", event.data);
+                        if (event.data == YT.PlayerState.ENDED) {
+                            console.log("🎉 유튜브 영상 종료 감지! 챗봇 표시");
+                            // ✅ 챗봇 컨테이너 보이게 설정
+                            document.getElementById('chatbot').style.display = 'block';
+
+                            // ✅ iframe 강제 새로고침하여 챗봇 정상 로드
+                            document.getElementById('chatbotFrame').src = "/chatbot_page";
+                        }
+                    }
+                }
+            });
+        }
+
+        function closeChatbot() {
+            document.getElementById('chatbot').style.display = 'none';
+        }
+
+        // ✅ 유튜브 API 스크립트 추가
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+
+    </script>
+</body>
+
+</html>
