@@ -98,14 +98,14 @@
 
     <h1>영상 재생</h1>
     <div class="video-container">
-        <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?enablejsapi=1" frameborder="0"
-            allowfullscreen>
+        <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?autoplay=1&enablejsapi=1" frameborder="0"
+        allow="autoplay; encrypted-media" allowfullscreen>
         </iframe>
 
     </div>
     <!-- ✅ 얼굴 인식 화면 (크기 조정 가능, 숨길 수 있도록 변경) -->
     <div class="face-detection-container" id="face-detection-container">
-        <img id="webcam-feed" src="{{ url_for('video_feed') }}">
+        <img id="webcam-feed" src="{{ url_for('video_feed', video_id=video_id, session_id='session123') }}">
     </div>
 
 
@@ -119,8 +119,26 @@
 
     <a class="back-link" href="/" onclick="stopFaceSaving(); showWebcamAgain()">돌아가기</a>
     <script>
+        let sessionId = "";  // ✅ 세션 ID 저장 변수
 
         document.addEventListener("DOMContentLoaded", function () {
+
+            fetch('/get_session_id')  // ✅ 세션 ID 요청
+            .then(response => response.json())
+            .then(data => {
+                sessionId = data.session_id;
+                let videoId = "{{ video_id }}";  // ✅ Jinja에서 video_id 가져오기
+                let webcamFeed = document.getElementById("webcam-feed");
+                if (videoId) {
+                    webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 동적으로 세션 반영
+                } else {
+                    console.error("❌ video_id가 정의되지 않음!");
+                }
+                //document.getElementById("webcam-feed").src = `/video_feed/{{ video_id }}/${sessionId}`;  // ✅ 동적으로 세션 반영
+            })
+            .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+
+
             toggleWebcamVisibility(true);  // ✅ 웹캠을 기본적으로 표시
             fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
                 .then(response => response.json())
