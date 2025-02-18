@@ -11,7 +11,8 @@
             text-align: center;
             margin: 0;
             padding: 20px;
-            background-color: #000000; /* 완전 블랙 */
+            background-color: #000000;
+            /* 완전 블랙 */
         }
 
         .video-container {
@@ -34,22 +35,26 @@
         }
 
         .face-detection-container {
-        position: fixed;
-        top: 0px; /* 화면 상단 */
-        right: 0px; /* 오른쪽 상단 */
-        width: 180px; /* 적절한 크기로 조절 */
-        height: auto;
-        z-index: 1000;
-        background: rgba(223, 222, 222, 0.7); /* 반투명 배경 */
-        border-radius: 5px;
-        padding: 5px;
-    }
+            position: fixed;
+            top: 0px;
+            /* 화면 상단 */
+            right: 0px;
+            /* 오른쪽 상단 */
+            width: 180px;
+            /* 적절한 크기로 조절 */
+            height: auto;
+            z-index: 1000;
+            background: rgba(223, 222, 222, 0.7);
+            /* 반투명 배경 */
+            border-radius: 5px;
+            padding: 5px;
+        }
 
-    .face-detection-container img {
-        width: 100%;
-        height: auto;
-        border-radius: 5px;
-    }
+        .face-detection-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
 
         .chatbot-container {
             display: none;
@@ -98,10 +103,9 @@
         </iframe>
 
     </div>
-    <!-- ✅ 얼굴 인식 화면 (크기 작게 조정) -->
-    <div class="face-detection-container">
-   
-        <img src="{{ url_for('video_feed') }}">
+    <!-- ✅ 얼굴 인식 화면 (크기 조정 가능, 숨길 수 있도록 변경) -->
+    <div class="face-detection-container" id="face-detection-container">
+        <img id="webcam-feed" src="{{ url_for('video_feed') }}">
     </div>
 
 
@@ -113,8 +117,25 @@
     </div>
 
 
-    <a class="back-link" href="/">돌아가기</a>
+    <a class="back-link" href="/" onclick="stopFaceSaving(); showWebcamAgain()">돌아가기</a>
     <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            toggleWebcamVisibility(true);  // ✅ 웹캠을 기본적으로 표시
+            fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
+                .then(response => response.json())
+                .then(data => console.log("📢 얼굴 저장 시작:", data))
+                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+        });
+
+        function stopFaceSaving() {
+            fetch('/stop_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 중지 요청
+                .then(response => response.json())
+                .then(data => console.log("🛑 얼굴 저장 중지:", data))
+                .catch(error => console.error("❌ 얼굴 저장 중지 요청 실패:", error));
+        }
+
+
         function onYouTubeIframeAPIReady() {
             console.log("📢 YouTube API 로드됨");
             var player = new YT.Player('videoFrame', {
@@ -128,6 +149,15 @@
 
                             // ✅ iframe 강제 새로고침하여 챗봇 정상 로드
                             document.getElementById('chatbotFrame').src = "/chatbot_page";
+                            // ✅ 영상 종료 시 얼굴 데이터 저장 중지 요청
+                            // fetch('/stop_saving_faces', { method: 'POST' })
+                            //     .then(response => response.json())
+                            //     .then(data => console.log("📢 얼굴 저장 중지 응답:", data))
+                            //     .catch(error => console.error("❌ 얼굴 저장 중지 요청 실패:", error));
+                            stopFaceSaving();  // ✅ 영상이 끝나면 얼굴 저장 중지
+                            // ✅ 영상이 끝나면 웹캠 숨김
+                            toggleWebcamVisibility(false);
+
                         }
                     }
                 }
@@ -144,6 +174,14 @@
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
+        function toggleWebcamVisibility(visible) {
+        document.getElementById("face-detection-container").style.display = visible ? "block" : "none";
+    }
+    function showWebcamAgain() {
+        setTimeout(() => {
+            toggleWebcamVisibility(true);  // ✅ 돌아가기 후 웹캠 다시 표시
+        }, 1000);  // ✅ 약간의 딜레이 후 실행
+    }
 
     </script>
 </body>
