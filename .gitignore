@@ -10,4 +10,4 @@ config/settings.json
 # 특정 폴더 내 모든 파일 무시
 faces/
 hugging/faces/
-
+__pycache__/
