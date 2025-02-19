@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import cv2
 from finance_chatbot import Chatbot
 import sys
-from common import currTime
+from common import currTime,chat_with_openai,get_random_video
 import mediapipe as mp
 import numpy as np
 #from face_processing import apply_filter
@@ -13,17 +13,18 @@ import time
 import base64 
 import atexit 
 import uuid  # ✅ 고유한 세션 ID 생성을 위한 라이브러리
+import openai
+from markupsafe import Markup  # ✅ Flask가 아닌 markupsafe에서 가져오기
 
-
-# ✅ 챗봇 인스턴스 생성
-jjinchin = Chatbot(
-    assistant_id="asst_vNuhpU0xp8lfJACH4HxRsuBT",
-    thread_id="thread_fs7NSkPuhqY37W1A8cnD0RjU"
-)
+# # ✅ 챗봇 인스턴스 생성
+# jjinchin = Chatbot(
+#     assistant_id="asst_vNuhpU0xp8lfJACH4HxRsuBT",
+#     thread_id="thread_fs7NSkPuhqY37W1A8cnD0RjU"
+# )
 
 
 app = Flask(__name__)
-
+app.secret_key = os.urandom(24)
 
 
 # ✅ MongoDB 연결
@@ -33,7 +34,7 @@ video_collection = db["videos"]  # ✅ "videos" 컬렉션 선택
 face_collection = db["faces"]
 
 
-app.secret_key = os.urandom(24)
+
 @app.route('/get_session_id')
 def get_session_id():
     """ 세션 ID를 생성하여 클라이언트에 반환 """
@@ -82,18 +83,29 @@ def chatbot_page():
 @app.route('/chat-api', methods=['POST'])
 def chat_api():
     request_message = request.form.get("message")     
-    print("request_message:", request_message)
-    try: 
-        jjinchin.add_user_message(request_message)
-        run = jjinchin.create_run()
-        _, response_message = jjinchin.get_response_content(run)
-        response_python_code = jjinchin.get_interpreted_code(run.id)
-    except Exception as e:
-        print("assistants ai error", e)
-        response_message = "[Assistants API 오류가 발생했습니다]"
+    print("📢 수신된 메시지:", request_message)
+
+    try:
+        if request_message == "📢 분석 결과가 나왔어요! 😃 이 영상을 보는 동안 당신의 감정은 .... 예요":
+            # ✅ OpenAI GPT API를 통해 가짜 메시지를 유머러스하게 생성 + MongoDB에서 추천 영상 가져오기
+            generated_analysis = chat_with_openai("이 사용자의 감정 분석 결과를 기반으로 유머러스하게 1줄로 말해줘.")
+            recommended_video_url = get_random_video()  # ✅ DB에서 Flask 라우트 형식의 영상 URL 가져오기
             
-    print("response_message:", response_message)
-    return {"response_message": response_message, "response_python_code": response_python_code}
+            response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 분석 결과: {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
+        else:
+            response_message = chat_with_openai(request_message)
+
+        print("📢 챗봇 응답:", response_message)
+        return jsonify({"response_message": Markup(response_message)})  # ✅ HTML 태그가 적용되도록 수정
+    
+    except Exception as e:
+        print(f"❌ `chat-api` 오류 발생: {e}")
+   
+    else:
+        response_message = chat_with_openai(request_message)  # ✅ 일반 메시지는 OpenAI GPT 호출
+
+    print("📢 챗봇 응답:", response_message)
+    return {"response_message": response_message}
 
 
 
@@ -140,7 +152,7 @@ def save_face_data(original_frame, landmarks,video_id="unknown", session_id="def
         "session_id": session_id,
         "image_filename": filename,  # ✅ 로컬 저장된 파일명 추가
         "image_path": save_path,  # ✅ 로컬 경로 추가
-        "original_image": face_image_base64,  # ✅ Base64 인코딩된 원본 이미지
+        #"original_image": face_image_base64,  # ✅ Base64 인코딩된 원본 이미지
         "landmarks": landmarks  # ✅ 랜드마크 좌표 리스트
     }
 

@@ -3,12 +3,15 @@ from openai import OpenAI
 from dataclasses import dataclass
 import pytz
 from datetime import datetime, timedelta
+from pymongo import MongoClient
+import random
+
 
 @dataclass(frozen=True)
 class Model: 
     basic: str = "gpt-3.5-turbo-1106"
     advanced: str = "gpt-4-1106-preview"
-    basic_old: str = "gpt-3.5-turbo" 
+    #basic_old: str = "gpt-3.5-turbo" 
 
 
 #API 키 파일 경로 지정
@@ -23,7 +26,24 @@ with open(api_key_path, 'r') as file:
 
 model = Model();    
 client = OpenAI(api_key=api_key, timeout=30, max_retries=1)
-        
+
+def chat_with_openai(message):
+    """ OpenAI GPT API를 사용하여 챗봇 대화 수행 """
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",  # ✅ GPT-3.5 사용 (비용 절감)
+            messages=[
+                {"role": "system", "content": "너는 찐쳇 딜리버리봇으로, 사용자의 표정 분석 결과를 유머러스하게 전달하는 농담 많은 챗봇이야."},
+                {"role": "user", "content": message}
+            ],
+            max_tokens=100
+        )
+        return response.choices[0].message.content  # ✅ 올바른 방식으로 응답 추출
+    except Exception as e:
+        print(f"❌ OpenAI API 요청 중 오류 발생: {e}")
+        return "[OpenAI API 요청 실패]"
+
+
 def makeup_response(message, finish_reason="ERROR"):
     return {
                 "choices": [
@@ -58,4 +78,40 @@ def currTime():
     now = datetime.now(korea)
     # 시각을 원하는 형식의 문자열로 변환합니다.
     formatted_now = now.strftime("%Y.%m.%d %H:%M:%S")
-    return(formatted_now)                
+    return(formatted_now)    
+
+
+
+# ✅ MongoDB 연결
+mongo_cluster = MongoClient("mongodb+srv://admin:admin1234@cluster0.uvix1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+db = mongo_cluster["jjinchin"]  # ✅ "jjinchin" 데이터베이스 선택
+video_collection = db["videos"]  # ✅ "videos" 컬렉션 선택
+face_collection = db["faces"]
+
+def extract_video_id(raw_url):
+    """ YouTube URL에서 video_id를 추출하는 함수 """
+    if "watch?v=" in raw_url:
+        return raw_url.split("?v=")[-1].split("&")[0]
+    elif "/shorts/" in raw_url:
+        return raw_url.split("/shorts/")[-1].split("?")[0]
+    else:
+        return raw_url.split("/")[-1].split("?")[0]
+
+def get_random_video():
+    """ MongoDB에서 랜덤한 영상 추천 (Flask 라우트 형식으로 변환) """
+    
+    video = video_collection.aggregate([{ "$sample": { "size": 1 } }])  # ✅ 1개의 랜덤 영상 가져오기
+    video = list(video)  # Cursor를 리스트로 변환
+    
+    if video:
+        video_data = video[0]
+
+        if "url" in video_data:
+            video_id = extract_video_id(video_data["url"])  # ✅ URL에서 video_id 추출
+        else:
+            print("⚠️ MongoDB에 'url' 필드가 없습니다. 기본 추천 영상을 반환합니다.")
+            return "http://127.0.0.1:5000/video/default"  # ✅ 기본 추천 영상
+        
+        return f"http://127.0.0.1:5000/video/{video_id}"  # ✅ Flask 라우트 형식으로 변환
+    
+    return "http://127.0.0.1:5000/video/default"  # ✅ 영상이 없을 경우 기본 영상 반환ㅍ
