@@ -1,8 +1,10 @@
 # 로그 파일 무시
 *.log
+*.pyc
 
 # 캐시 폴더 무시
-cache/
+__pycache__/
+
 
 # 환경설정 파일 무시
 config/settings.json
