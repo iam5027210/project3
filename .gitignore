@@ -1,0 +1,13 @@
+# 로그 파일 무시
+*.log
+
+# 캐시 폴더 무시
+cache/
+
+# 환경설정 파일 무시
+config/settings.json
+
+# 특정 폴더 내 모든 파일 무시
+faces/
+hugging/faces/
+
