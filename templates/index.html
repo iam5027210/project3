@@ -80,6 +80,11 @@
 </head>
 <body>
     <h1>표정으로 알아보는 스트리밍 찐반응</h1>
+    <!-- ✅ 웹캠 스트리밍 컨테이너 (기본적으로 보이도록 설정) -->
+    <div id="webcam-container">
+        <img id="webcam-feed" src="/video_feed" style="width:200px; height:auto; border-radius:10px;" >
+    </div>
+
     <div class="video-container">
         {% for video in videos %}
             <div class="video">
@@ -98,5 +103,30 @@
             </div>
         {% endfor %}
     </div>
+    <script>
+    let sessionId = "";  // ✅ 세션 ID 저장 변수
+    let videoId = "none";  // ✅ 메인 화면에서는 기본값 사용
+
+        // ✅ 웹캠 화면을 숨길 수 있도록 조작하는 함수
+        function toggleWebcamVisibility(visible) {
+            document.getElementById("webcam-container").style.display = visible ? "block" : "none";
+        }
+
+        // // ✅ 페이지가 로드될 때 기본적으로 웹캠을 실행하고, 이후 제어 가능
+        // document.addEventListener("DOMContentLoaded", function () {
+        //     toggleWebcamVisibility(true); // 기본적으로 웹캠 표시
+        // });
+        document.addEventListener("DOMContentLoaded", function () {
+        fetch('/get_session_id')  // ✅ 세션 ID 요청
+            .then(response => response.json())
+            .then(data => {
+                sessionId = data.session_id;
+                let webcamFeed = document.getElementById("webcam-feed");
+                webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 올바른 URL 형식 적용
+            })
+            .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+
+        toggleWebcamVisibility(true);  // ✅ 웹캠 기본 표시      
+    </script>
 </body>
 </html>
