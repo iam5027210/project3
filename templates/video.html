@@ -98,8 +98,8 @@
 
     <h1>영상 재생</h1>
     <div class="video-container">
-        <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?autoplay=1&enablejsapi=1" frameborder="0"
-        allow="autoplay; encrypted-media" allowfullscreen>
+        <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?autoplay=1&enablejsapi=1"
+            frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
         </iframe>
 
     </div>
@@ -120,23 +120,24 @@
     <a class="back-link" href="/" onclick="stopFaceSaving(); showWebcamAgain()">돌아가기</a>
     <script>
         let sessionId = "";  // ✅ 세션 ID 저장 변수
+        let chatbotMessageSent = false;
 
         document.addEventListener("DOMContentLoaded", function () {
 
             fetch('/get_session_id')  // ✅ 세션 ID 요청
-            .then(response => response.json())
-            .then(data => {
-                sessionId = data.session_id;
-                let videoId = "{{ video_id }}";  // ✅ Jinja에서 video_id 가져오기
-                let webcamFeed = document.getElementById("webcam-feed");
-                if (videoId) {
-                    webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 동적으로 세션 반영
-                } else {
-                    console.error("❌ video_id가 정의되지 않음!");
-                }
-                //document.getElementById("webcam-feed").src = `/video_feed/{{ video_id }}/${sessionId}`;  // ✅ 동적으로 세션 반영
-            })
-            .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+                .then(response => response.json())
+                .then(data => {
+                    sessionId = data.session_id;
+                    let videoId = "{{ video_id }}";  // ✅ Jinja에서 video_id 가져오기
+                    let webcamFeed = document.getElementById("webcam-feed");
+                    if (videoId) {
+                        webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 동적으로 세션 반영
+                    } else {
+                        console.error("❌ video_id가 정의되지 않음!");
+                    }
+                    //document.getElementById("webcam-feed").src = `/video_feed/{{ video_id }}/${sessionId}`;  // ✅ 동적으로 세션 반영
+                })
+                .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
 
 
             toggleWebcamVisibility(true);  // ✅ 웹캠을 기본적으로 표시
@@ -152,6 +153,30 @@
                 .then(data => console.log("🛑 얼굴 저장 중지:", data))
                 .catch(error => console.error("❌ 얼굴 저장 중지 요청 실패:", error));
         }
+
+
+        function sendFakeChatbotMessage() {
+            if (chatbotMessageSent) return;  // ✅ 이미 전송되었으면 실행하지 않음
+            chatbotMessageSent = true;
+            
+            fetch('/chat-api', {  // ✅ Flask 서버의 /chat-api 엔드포인트에 요청
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ "message": "📢 분석 결과가 나왔어요! 😃 이 영상을 보는 동안 당신의 감정은 .... 예요" })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("📢 챗봇 응답 수신 완료:", data);
+            if (data.response_message) {
+                let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+                chatbotFrame.postMessage({ type: "chatbotMessage", message: data.response_message }, "*");  // ✅ 챗봇 iframe으로 메시지 전송
+            } else {
+                console.error("❌ 챗봇 응답이 없음.");
+            }
+        })
+        .catch(error => console.error("❌ 챗봇 메시지 전송 실패:", error));
+        }
+
 
 
         function onYouTubeIframeAPIReady() {
@@ -175,6 +200,7 @@
                             stopFaceSaving();  // ✅ 영상이 끝나면 얼굴 저장 중지
                             // ✅ 영상이 끝나면 웹캠 숨김
                             toggleWebcamVisibility(false);
+                            sendFakeChatbotMessage();
 
                         }
                     }
@@ -193,13 +219,13 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function toggleWebcamVisibility(visible) {
-        document.getElementById("face-detection-container").style.display = visible ? "block" : "none";
-    }
-    function showWebcamAgain() {
-        setTimeout(() => {
-            toggleWebcamVisibility(true);  // ✅ 돌아가기 후 웹캠 다시 표시
-        }, 1000);  // ✅ 약간의 딜레이 후 실행
-    }
+            document.getElementById("face-detection-container").style.display = visible ? "block" : "none";
+        }
+        function showWebcamAgain() {
+            setTimeout(() => {
+                toggleWebcamVisibility(true);  // ✅ 돌아가기 후 웹캠 다시 표시
+            }, 1000);  // ✅ 약간의 딜레이 후 실행
+        }
 
     </script>
 </body>
