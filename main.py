@@ -121,10 +121,18 @@ def chat_api():
     request_message = request.form.get("message")     
     print("📢 수신된 메시지:", request_message)
 
+        # ✅ GPT 요청 중복 실행 방지
+    if session.get("last_message") == request_message:
+        print("⚠ 이미 같은 메시지를 처리했으므로 무시")
+        return jsonify({"response_message": "⚠ 중복된 메시지는 처리되지 않습니다."})
+
+    session["last_message"] = request_message  # ✅ 마지막 메시지 저장
+
+
     try:
         if "📢 분석 결과가 나왔어요!" in request_message:
             # ✅ OpenAI GPT API를 통해 유머러스한 메시지 생성
-            generated_analysis = chat_with_openai("이 사용자의 감정 분석 결과를 기반으로 유머러스하게 1줄로 말해줘.")
+            generated_analysis = chat_with_openai("이 사용자의 감정 분석 결과를 기반으로 유머러스하게 1줄,20자이내로 말해줘.")
             recommended_video_url = get_random_video()  # ✅ DB에서 Flask 라우트 형식의 영상 URL 가져오기
             
             response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 \n\n 🎭 **분석 결과:** {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
