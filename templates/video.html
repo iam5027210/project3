@@ -233,6 +233,14 @@
             let emotionPercentages = Object.entries(response.emotion_percentages)
                 .map(([emotion, percent]) => `${emotion} (${percent}%)`).join(", ");
 
+            // ✅ 챗봇 iframe으로 감정 분석 데이터를 직접 전달
+            let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+            chatbotFrame.postMessage({
+                type: "emotionData",
+                emotionTimeline: response.emotions_over_time,
+                emotionPercentages: response.emotion_percentages
+            }, "*");
+
             let chatbotMessage = `
         🎬 영상이 끝났어요! 분석 결과를 알려드릴게요. 📊  
         ✅ **영상 감정 변화 흐름:**  
@@ -241,9 +249,7 @@
         ✅ **영상 동안 감정 비율:**  
         ${emotionPercentages}  
 
-        📢 다음 추천 영상을 확인해보세요! 😊
     `;
-
             sendChatbotMessage(chatbotMessage);
         }
 
