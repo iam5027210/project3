@@ -90,6 +90,23 @@
             font-size: 30px;
             font-weight: bold;
         }
+
+        /* 얼굴 감정 분석 결과를 얼굴 화면 위에 표시 */
+        .emotion-overlay {
+            position: fixed;
+            top: 10px;
+            /* 얼굴 위에 표시 */
+            right: 200px;
+            /* 얼굴 인식 창에 맞게 위치 조정 */
+            font-size: 30px;
+            font-weight: bold;
+            color: rgb(255, 166, 0);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1001;
+            /* 얼굴 인식 화면보다 위에 표시되도록 */
+        }
     </style>
 </head>
 
@@ -103,6 +120,11 @@
         </iframe>
 
     </div>
+    <!-- 감정 분석 결과를 표시할 영역 
+    <div class="emotion-overlay" id="emotion-result">감정 분석 중...</div>
+    -->
+
+
     <!-- ✅ 얼굴 인식 화면 (크기 조정 가능, 숨길 수 있도록 변경) -->
     <div class="face-detection-container" id="face-detection-container">
         <img id="webcam-feed" src="{{ url_for('video_feed', video_id=video_id, session_id='session123') }}">
@@ -158,23 +180,90 @@
         function sendFakeChatbotMessage() {
             if (chatbotMessageSent) return;  // ✅ 이미 전송되었으면 실행하지 않음
             chatbotMessageSent = true;
-            
+
             fetch('/chat-api', {  // ✅ Flask 서버의 /chat-api 엔드포인트에 요청
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ "message": "📢 분석 결과가 나왔어요! 😃 이 영상을 보는 동안 당신의 감정은 .... 예요" })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("📢 챗봇 응답 수신 완료:", data);
-            if (data.response_message) {
-                let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
-                chatbotFrame.postMessage({ type: "chatbotMessage", message: data.response_message }, "*");  // ✅ 챗봇 iframe으로 메시지 전송
-            } else {
-                console.error("❌ 챗봇 응답이 없음.");
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ "message": "📢 분석 결과가 나왔어요! 😃 이 영상을 보는 동안 당신의 감정은 .... 예요" })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("📢 챗봇 응답 수신 완료:", data);
+                    if (data.response_message) {
+                        let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+                        chatbotFrame.postMessage({ type: "chatbotMessage", message: data.response_message }, "*");  // ✅ 챗봇 iframe으로 메시지 전송
+                    } else {
+                        console.error("❌ 챗봇 응답이 없음.");
+                    }
+                })
+                .catch(error => console.error("❌ 챗봇 메시지 전송 실패:", error));
+        }
+
+        async function fetchEmotionAnalysis() {
+            console.log("✅ `fetchEmotionAnalysis()` 실행됨!");
+
+            const videoId = "{{ video_id }}";  // ✅ 현재 영상 ID 가져오기
+            const response = await fetch(`/get_emotion_analysis/${videoId}/${sessionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`❌ 서버 오류 발생: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error("❌ 감정 분석 요청 실패:", error);
+                });
+
+            if (!response) {
+                console.error("❌ 감정 분석 응답이 없음!");
+                return;
             }
-        })
-        .catch(error => console.error("❌ 챗봇 메시지 전송 실패:", error));
+
+            console.log("📢 `fetchEmotionAnalysis()` 응답:", response);  // ✅ 응답 확인
+
+            // ✅ 감정 분석 응답이 정상적으로 도착했는지 확인
+            if (response.error) {
+                console.error("❌ 감정 분석 데이터 오류:", response.error);
+                return;
+            }
+
+            let emotionTimeline = response.emotions_over_time.map(entry =>
+                `${new Date(entry.timestamp * 1000).toLocaleTimeString()} - ${entry.emotion}`).join("\n");
+
+            let emotionPercentages = Object.entries(response.emotion_percentages)
+                .map(([emotion, percent]) => `${emotion} (${percent}%)`).join(", ");
+
+            let chatbotMessage = `
+        🎬 영상이 끝났어요! 분석 결과를 알려드릴게요. 📊  
+        ✅ **영상 감정 변화 흐름:**  
+        ${emotionTimeline}  
+
+        ✅ **영상 동안 감정 비율:**  
+        ${emotionPercentages}  
+
+        📢 다음 추천 영상을 확인해보세요! 😊
+    `;
+
+            sendChatbotMessage(chatbotMessage);
+        }
+
+        function sendChatbotMessage(message) {
+            fetch('/chat-api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ "message": message })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("📢 챗봇 응답 수신 완료:", data);
+                    if (data.response_message) {
+                        let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+                        chatbotFrame.postMessage({ type: "chatbotMessage", message: data.response_message }, "*");
+                    } else {
+                        console.error("❌ 챗봇 응답이 없음.");
+                    }
+                })
+                .catch(error => console.error("❌ 챗봇 메시지 전송 실패:", error));
         }
 
 
@@ -186,6 +275,10 @@
                     'onStateChange': function (event) {
                         console.log("🎥 유튜브 상태 변경: ", event.data);
                         if (event.data == YT.PlayerState.ENDED) {
+
+                            console.log("🎉 유튜브 영상 종료 감지! 챗봇 분석 실행");
+                            fetchEmotionAnalysis();  // ✅ 영상이 끝나면 감정 분석 실행
+
                             console.log("🎉 유튜브 영상 종료 감지! 챗봇 표시");
                             // ✅ 챗봇 컨테이너 보이게 설정
                             document.getElementById('chatbot').style.display = 'block';
@@ -200,13 +293,16 @@
                             stopFaceSaving();  // ✅ 영상이 끝나면 얼굴 저장 중지
                             // ✅ 영상이 끝나면 웹캠 숨김
                             toggleWebcamVisibility(false);
-                            sendFakeChatbotMessage();
+
 
                         }
                     }
                 }
             });
         }
+
+
+
 
         function closeChatbot() {
             document.getElementById('chatbot').style.display = 'none';
@@ -226,6 +322,9 @@
                 toggleWebcamVisibility(true);  // ✅ 돌아가기 후 웹캠 다시 표시
             }, 1000);  // ✅ 약간의 딜레이 후 실행
         }
+
+        // 3초마다 감정 분석 결과 업데이트
+        // setInterval(fetchEmotionAnalysis, 3000);
 
     </script>
 </body>

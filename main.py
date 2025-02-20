@@ -15,6 +15,15 @@ import atexit
 import uuid  # ✅ 고유한 세션 ID 생성을 위한 라이브러리
 import openai
 from markupsafe import Markup  # ✅ Flask가 아닌 markupsafe에서 가져오기
+from deepface import DeepFace
+from PIL import ImageFont, ImageDraw, Image
+from flask_session import Session  # ✅ 세션 저장을 위한 Flask-Session 추가
+
+
+# ✅ 한글 & 이모티콘 지원을 위한 폰트 설정
+FONT_PATH_HANGUL = "fonts/NanumGothicBold.ttf"  # 한글 지원 폰트 파일 경로
+FONT_PATH_EMOJI = "fonts/NotoColorEmoji.ttf"  # 이모티콘 지원 폰트 (Windows는 "Segoe UI Emoji")
+FONT_SIZE = 60  # 폰트 크기 조절
 
 # # ✅ 챗봇 인스턴스 생성
 # jjinchin = Chatbot(
@@ -23,8 +32,30 @@ from markupsafe import Markup  # ✅ Flask가 아닌 markupsafe에서 가져오�
 # )
 
 
+# try:
+#     font = ImageFont.truetype("fonts/NanumGothicBold.ttf", 40)
+#     print("✅ 폰트 로드 성공!")
+# except Exception as e:
+#     print(f"❌ 폰트 로드 실패: {e}")
+
+
+
+
+
+
+
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+#app.secret_key = os.urandom(24)
+# ✅ 고정된 SECRET_KEY 설정 (랜덤값이 아니라, 항상 동일한 값 사용)
+app.secret_key = "super_secret_fixed_key"
+
+
+# ✅ Flask 세션 설정 (서버에서 세션을 저장하여 유지)
+app.config["SESSION_TYPE"] = "filesystem"  # ✅ 파일 시스템에 세션 저장
+app.config["SESSION_PERMANENT"] = False  # ✅ 브라우저를 닫으면 세션 삭제
+app.config["SESSION_USE_SIGNER"] = True  # ✅ 세션 데이터 서명 (보안 강화)
+Session(app)  # ✅ 세션 적용
+
 
 
 # ✅ MongoDB 연결
@@ -37,10 +68,14 @@ face_collection = db["faces"]
 
 @app.route('/get_session_id')
 def get_session_id():
-    """ 세션 ID를 생성하여 클라이언트에 반환 """
+    """ 현재 세션 ID 반환 """
     if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())  # ✅ 랜덤한 UUID 생성
-    return jsonify({"session_id": session['session_id']})
+        session['session_id'] = str(uuid.uuid4())  # 새 세션 ID 생성
+        session['popup_shown'] = False  # ✅ 팝업을 표시했는지 여부 추가
+
+    return jsonify({"session_id": session['session_id'], "popup_shown": session['popup_shown']})
+
+
 
 
 # ✅ 얼굴 데이터 저장 여부 (영상이 끝나면 False로 설정)
@@ -80,33 +115,29 @@ def video_page(video_id):
 def chatbot_page():
     return render_template('chatbot.html',messageTime=currTime())
 
+
 @app.route('/chat-api', methods=['POST'])
 def chat_api():
     request_message = request.form.get("message")     
     print("📢 수신된 메시지:", request_message)
 
     try:
-        if request_message == "📢 분석 결과가 나왔어요! 😃 이 영상을 보는 동안 당신의 감정은 .... 예요":
-            # ✅ OpenAI GPT API를 통해 가짜 메시지를 유머러스하게 생성 + MongoDB에서 추천 영상 가져오기
+        if "📢 분석 결과가 나왔어요!" in request_message:
+            # ✅ OpenAI GPT API를 통해 유머러스한 메시지 생성
             generated_analysis = chat_with_openai("이 사용자의 감정 분석 결과를 기반으로 유머러스하게 1줄로 말해줘.")
             recommended_video_url = get_random_video()  # ✅ DB에서 Flask 라우트 형식의 영상 URL 가져오기
             
-            response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 분석 결과: {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
+            response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 \n\n 🎭 **분석 결과:** {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
+        
         else:
-            response_message = chat_with_openai(request_message)
+            response_message = chat_with_openai(request_message)  # ✅ 일반 메시지는 OpenAI GPT 호출
 
         print("📢 챗봇 응답:", response_message)
-        return jsonify({"response_message": Markup(response_message)})  # ✅ HTML 태그가 적용되도록 수정
+        return jsonify({"response_message": Markup(response_message)})  # ✅ HTML 태그 적용
     
     except Exception as e:
         print(f"❌ `chat-api` 오류 발생: {e}")
-   
-    else:
-        response_message = chat_with_openai(request_message)  # ✅ 일반 메시지는 OpenAI GPT 호출
-
-    print("📢 챗봇 응답:", response_message)
-    return {"response_message": response_message}
-
+        return jsonify({"response_message": "⚠ 오류가 발생했습니다. 다시 시도해주세요!"})
 
 
 # MediaPipe 얼굴 검출 모델 초기화
@@ -117,7 +148,20 @@ face_detection = mp_face_detection.FaceDetection(model_selection=1, min_detectio
 face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, min_detection_confidence=0.5)
 
 
-def save_face_data(original_frame, landmarks,video_id="unknown", session_id="default_session"):
+# ✅ 영어 감정 분석 결과 → 한글 + 이모티콘 변환
+emotion_translation = {
+    "angry": "화남",
+    "disgust": "역겨움",
+    "fear": "두려움",
+    "happy": "웃음",
+    "sad": "슬픔",
+    "surprise": "놀람",
+    "neutral": "중립"
+}
+
+
+
+def save_face_data(original_frame,emotion, landmarks,video_id="unknown", session_id="default_session"):
     """ 원본 얼굴 이미지를 MongoDB와 로컬 폴더에 저장 """
 
     global stop_saving_faces
@@ -153,11 +197,14 @@ def save_face_data(original_frame, landmarks,video_id="unknown", session_id="def
         "image_filename": filename,  # ✅ 로컬 저장된 파일명 추가
         "image_path": save_path,  # ✅ 로컬 경로 추가
         #"original_image": face_image_base64,  # ✅ Base64 인코딩된 원본 이미지
-        "landmarks": landmarks  # ✅ 랜드마크 좌표 리스트
+        "landmarks": landmarks,  # ✅ 랜드마크 좌표 리스트
+        "emotion" : emotion
     }
 
     face_collection.insert_one(face_data)  # MongoDB에 저장
-    print("✅ 원본 얼굴 이미지 & 랜드마크 저장 완료(video.html에서만 저장)")
+    print("✅ 얼굴 데이터 & 랜드마크, 감정 분석 결과 저장 완료(video.html에서만 저장)")
+
+
 
 
 
@@ -179,6 +226,7 @@ def apply_filter(frame):
     results = face_detection.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
     landmarks_list = []
+    emotion_result = "🙂 중립"  # 기본값 설정
 
 
     if results.detections:
@@ -190,6 +238,36 @@ def apply_filter(frame):
             # ✅ 3. 얼굴 부분만 잘라서 배경이 흰색인 이미지에 넣기
             face_roi = frame[y:y+h_box, x:x+w_box]
             white_background[y:y+h_box, x:x+w_box] = face_roi
+
+            # ✅ 4. DeepFace 감정 분석 수행, # ✅ 감정 분석 실행 (한글 변환 적용)
+            emotion_result = analyze_emotion_with_deepface(face_roi)
+
+            # # ✅ 글자 크기(Font Scale) & 색상(BGR 값) 수정
+            # font_scale = 1.5  # 글자 크기 키우기
+            # font_color = (0, 166, 255)  # 글자 색상 (BGR: )
+            # thickness = 3  # 글자 두께 증가
+
+            # # ✅ 5. 감정 분석 결과를 화면에 표시
+            # cv2.putText(white_background, f"{emotion_result.upper()}", 
+            #             (x, y - 20), cv2.FONT_HERSHEY_SIMPLEX, 
+            #             font_scale, font_color, thickness, cv2.LINE_AA)
+            
+
+            # # ✅ OpenCV 대신 Pillow로 한글 & 이모티콘 출력
+            frame_pil = Image.fromarray(white_background)  # OpenCV → PIL 변환
+            draw = ImageDraw.Draw(frame_pil)
+            font = ImageFont.truetype(FONT_PATH_HANGUL, FONT_SIZE)
+
+            # # ✅ 한글 & 이모티콘 표시 (폰트 크기 & 색상 조절)
+            draw.text((x, y - 80), emotion_result, font=font, fill=(0, 166, 255))  # (RGB)
+            white_background = np.array(frame_pil)  # PIL → OpenCV 변환
+
+
+
+
+
+
+
 
     # ✅ 4. 얼굴 표정 감지를 위한 FaceMesh 실행
     mesh_results = face_mesh.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -209,7 +287,11 @@ def apply_filter(frame):
     # if results.detections:
     #     save_face_data(original_frame, landmarks_list)
 
-    return white_background, original_frame, landmarks_list  # ✅ 저장 로직 제거하고, 반환값 변경
+
+    return white_background, original_frame, landmarks_list,emotion_result   # ✅ 감정 분석 결과 추가 반환
+
+
+
 
 
 # ✅ 웹캠 한 번만 실행
@@ -230,7 +312,7 @@ def generate_frames(video_id="unknown", session_id="unknown_session"):
             break
 
        # ✅ 필터 적용 (저장 X, 필터만 처리)
-        filtered_frame, original_frame, landmarks = apply_filter(frame)  
+        filtered_frame, original_frame, landmarks, emotions = apply_filter(frame)  
         
         # ✅ landmarks가 리스트인지 확인 (안전한 처리)
         if not isinstance(landmarks, list):
@@ -242,7 +324,7 @@ def generate_frames(video_id="unknown", session_id="unknown_session"):
 
         # ✅ video_id가 'unknown'이면 저장 ❌ (메인 페이지에서 저장 방지)
         if not stop_saving_faces and video_id not in ( "unknown", "none") and (current_time - last_saved_time >= 1.0):
-            save_face_data(original_frame, landmarks,video_id, session_id)  # ✅ 저장은 여기에서만 실행
+            save_face_data(original_frame,emotions, landmarks,video_id, session_id)  # ✅ 저장은 여기에서만 실행
             last_saved_time = current_time  # ✅ 마지막 저장 시간을 업데이트
 
         # 웹캠 화면을 전달할 수 있도록 변환
@@ -251,6 +333,26 @@ def generate_frames(video_id="unknown", session_id="unknown_session"):
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+def analyze_emotion_with_deepface(face_roi):
+    """ DeepFace를 사용하여 감정을 분석한 후 한글 & 이모티콘 변환 """
+    try:
+        analysis = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False)
+        dominant_emotion = analysis[0]['dominant_emotion']
+        #print(f"🎭 감정 분석 결과 (영어): {dominant_emotion}")
+
+        # ✅ 영어 감정을 한글 + 이모티콘으로 변환
+        translated_emotion = emotion_translation.get(dominant_emotion, "🙂 알 수 없음")
+        print(f"🎭 감정 분석 결과 (한글): {translated_emotion}")
+
+        return translated_emotion
+    except Exception as e:
+        print(f"⚠ 감정 분석 실패: {e}")
+        return "🤔 분석 불가"
+
+
+
 
 
 @app.route('/saved_faces')
@@ -275,6 +377,41 @@ def video_feed(video_id, session_id):
 # @app.route('/video_feed')
 # def video_feed():
 #     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/get_emotion_analysis/<video_id>/<session_id>')
+def get_emotion_analysis(video_id, session_id):
+    """ MongoDB에서 특정 영상 & 세션의 감정 데이터를 가져와 분석 """
+
+    # ✅ 해당 영상 & 세션에 대한 얼굴 감정 데이터 가져오기
+    face_data = list(face_collection.find(
+        {"video_id": video_id, "session_id": session_id},
+        {"_id": 0, "timestamp": 1, "emotion": 1}
+    ))
+
+    if not face_data:
+        return jsonify({"error": "해당 영상의 감정 데이터가 없음"}), 404
+
+    # ✅ 시간순으로 정렬
+    face_data.sort(key=lambda x: x["timestamp"])
+
+    # ✅ 감정 변화 분석 (시간순)
+    emotions_over_time = [{"timestamp": entry["timestamp"], "emotion": entry["emotion"]} for entry in face_data]
+
+    # ✅ 감정 비율 분석
+    emotion_counts = {}
+    for entry in face_data:
+        emotion = entry["emotion"]
+        emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
+
+    total_count = sum(emotion_counts.values())
+    emotion_percentages = {emotion: round((count / total_count) * 100, 2) for emotion, count in emotion_counts.items()}
+
+    # ✅ 분석 결과 반환
+    return jsonify({
+        "emotions_over_time": emotions_over_time,
+        "emotion_percentages": emotion_percentages
+    })
+
 
 
 

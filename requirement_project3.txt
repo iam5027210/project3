@@ -1,0 +1,5 @@
+pip==24.2
+numpy==2.2.3
+opencv-python
+mediapipe
+fer

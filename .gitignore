@@ -13,3 +13,6 @@ config/settings.json
 faces/
 hugging/faces/
 __pycache__/
+flask_session/
+files/
+

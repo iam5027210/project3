@@ -1,20 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>재생 목록</title>
     <style>
-
-
         /* ✅ 전체 배경을 완전 블랙으로 변경 */
-        body { 
-            font-family: 'Arial', sans-serif; 
-            text-align: center; 
-            margin: 0; 
-            padding: 20px; 
-            background-color: #000000; /* 완전 블랙 */
-            color: #E0E0E0; /* 부드러운 흰색 (눈부심 방지) */
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #000000;
+            /* 완전 블랙 */
+            color: #E0E0E0;
+            /* 부드러운 흰색 (눈부심 방지) */
         }
 
         /* ✅ 메인 제목 스타일 (더 극장 같은 분위기) */
@@ -23,89 +24,111 @@
             font-weight: bold;
             letter-spacing: 2px;
             color: #FFFFFF;
-            text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3); /* 은은한 네온 조명 느낌 */
+            text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+            /* 은은한 네온 조명 느낌 */
             margin-bottom: 30px;
         }
 
         /* ✅ 비디오 목록 (최적화된 레이아웃) */
-        .video-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 20px; 
-            padding: 20px; 
+        .video-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
             justify-content: center;
         }
 
         /* ✅ 비디오 카드 스타일 (더 고급스럽고 부드러운 느낌) */
-        .video { 
-            background: rgb(255, 255, 255); /* 블랙 배경 위에 약간의 투명감 추가 */
-            padding: 15px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); /* 부드러운 극장 조명 효과 */
+        .video {
+            background: rgb(255, 255, 255);
+            /* 블랙 배경 위에 약간의 투명감 추가 */
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+            /* 부드러운 극장 조명 효과 */
             transition: transform 0.3s ease-in-out, box-shadow 0.3s;
         }
 
         /* ✅ 마우스를 올릴 때 부드러운 조명 효과 추가 */
         .video:hover {
-            transform: scale(1.05); /* 살짝 확대 */
-            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2); /* 부드러운 네온 조명 */
+            transform: scale(1.05);
+            /* 살짝 확대 */
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
+            /* 부드러운 네온 조명 */
         }
 
         /* ✅ 비디오 썸네일 스타일 (더 세련되게) */
-        .video img { 
-            width: 100%; 
-            border-radius: 8px; 
+        .video img {
+            width: 100%;
+            border-radius: 8px;
             transition: opacity 0.3s, transform 0.3s;
         }
 
         /* ✅ 썸네일에 마우스를 올렸을 때 살짝 어두워지는 효과 */
         .video:hover img {
-            opacity: 0.85; 
-            transform: scale(1.02); /* 약간 확대 */
+            opacity: 0.85;
+            transform: scale(1.02);
+            /* 약간 확대 */
         }
 
         /* ✅ 비디오 제목 스타일 (눈이 편한 색상과 입체감 추가) */
-        .video p { 
-            font-size: 16px; 
-            font-weight: 600; 
-            margin-top: 10px; 
-            color: #030303; /* 부드러운 흰색 (눈에 덜 피로함) */
-       
+        .video p {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            color: #030303;
+            /* 부드러운 흰색 (눈에 덜 피로함) */
+
         }
 
+        /* ✅ 웹캠 스트리밍 컨테이너 */
+        #webcam-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
 
 
 
     </style>
 </head>
+
 <body>
     <h1>표정으로 알아보는 스트리밍 찐반응</h1>
+
+
+
     <!-- ✅ 웹캠 스트리밍 컨테이너 (기본적으로 보이도록 설정) -->
     <div id="webcam-container">
-        <img id="webcam-feed" src="/video_feed" style="width:200px; height:auto; border-radius:10px;" >
+        <img id="webcam-feed" src="/video_feed" style="width:200px; height:auto; border-radius:10px;">
     </div>
 
     <div class="video-container">
         {% for video in videos %}
-            <div class="video">
-                {% set raw_url = video.get('url', '') %}
-                {% if 'watch?v=' in raw_url %}
-                    {% set video_id = raw_url.split('?v=')[-1].split('&')[0] %}
-                {% elif '/shorts/' in raw_url %}
-                    {% set video_id = raw_url.split('/shorts/')[-1].split('?')[0] %}
-                {% else %}
-                    {% set video_id = raw_url.split('/')[-1].split('?')[0] %}
-                {% endif %}
-                <a href="/video/{{ video_id }}">
-                    <img src="https://img.youtube.com/vi/{{ video_id }}/0.jpg" alt="{{ video.get('title', 'No Title') }}">
-                    <p>{{ video.get('title', video_id) }}</p>
-                </a>
-            </div>
+        <div class="video">
+            {% set raw_url = video.get('url', '') %}
+            {% if 'watch?v=' in raw_url %}
+            {% set video_id = raw_url.split('?v=')[-1].split('&')[0] %}
+            {% elif '/shorts/' in raw_url %}
+            {% set video_id = raw_url.split('/shorts/')[-1].split('?')[0] %}
+            {% else %}
+            {% set video_id = raw_url.split('/')[-1].split('?')[0] %}
+            {% endif %}
+            <a href="/video/{{ video_id }}">
+                <img src="https://img.youtube.com/vi/{{ video_id }}/0.jpg" alt="{{ video.get('title', 'No Title') }}">
+                <p>{{ video.get('title', video_id) }}</p>
+            </a>
+        </div>
         {% endfor %}
     </div>
     <script>
-    let sessionId = "";  // ✅ 세션 ID 저장 변수
-    let videoId = "none";  // ✅ 메인 화면에서는 기본값 사용
+        // let sessionId = "";  // ✅ 세션 ID 저장 변수
+        // let videoId = "none";  // ✅ 메인 화면에서는 기본값 사용
+        // let popupShown = false; // 팝업 표시 여부
+
+
+
+
+
 
         // ✅ 웹캠 화면을 숨길 수 있도록 조작하는 함수
         function toggleWebcamVisibility(visible) {
@@ -116,17 +139,69 @@
         // document.addEventListener("DOMContentLoaded", function () {
         //     toggleWebcamVisibility(true); // 기본적으로 웹캠 표시
         // });
-        document.addEventListener("DOMContentLoaded", function () {
-        fetch('/get_session_id')  // ✅ 세션 ID 요청
-            .then(response => response.json())
-            .then(data => {
-                sessionId = data.session_id;
-                let webcamFeed = document.getElementById("webcam-feed");
-                webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 올바른 URL 형식 적용
-            })
-            .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
 
-        toggleWebcamVisibility(true);  // ✅ 웹캠 기본 표시      
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch('/get_session_id')  // ✅ 세션 ID 요청
+                .then(response => response.json())
+                .then(data => {
+                    sessionId = data.session_id;
+                    let webcamFeed = document.getElementById("webcam-feed");
+                    webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 올바른 URL 형식 적용
+                })
+                .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+            // ✅ 팝업창에서 웹캠 실행
+           // document.getElementById("popup").style.display = "flex";
+            //toggleWebcamVisibility(false);  // ✅ 웹캠 기본 표시  
+
+            // ✅ localStorage에서 '오늘 하루 닫기' 설정 확인
+            let popupClosedToday = localStorage.getItem("popupClosedToday");
+
+            if (popupClosedToday === "true") {
+                console.log("🛑 오늘 하루 동안 팝업 표시 안함");
+                document.getElementById("popup").style.display = "none";
+                document.getElementById("webcam-container").classList.add("hidden"); // 웹캠 숨김
+            } else {
+                console.log("✅ 팝업 표시");
+                document.getElementById("popup").style.display = "flex"; // 팝업 표시
+            }
+
+            // ✅ 팝업 닫기 버튼 이벤트 추가
+            document.getElementById("close-popup-btn").addEventListener("click", function () {
+                closePopup();
+            });
+            // ✅ 서버에서 세션 ID 및 팝업 상태 가져오기
+            // fetch('/get_session_id')
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         let sessionId = data.session_id;  // ✅ 서버에서 가져온 세션 ID 사용
+            //         let popupShown = data.popup_shown;
+            //         console.log("✅ 현재 세션 ID:", sessionId, "| 팝업 표시 여부:", popupShown);
+
+            //         // ✅ 세션에서 팝업이 닫혔는지 확인
+            //         if (!popupShown) {
+            //             console.log("✅ 새 세션 - 팝업 표시");
+            //             document.getElementById("popup").style.display = "flex"; // 팝업 표시
+            //         } else {
+            //             console.log("🛑 이전에 방문한 세션 - 팝업 표시 안함");
+            //             document.getElementById("popup").style.display = "none";
+            //             document.getElementById("webcam-container").classList.add("hidden"); // 웹캠 숨김
+            //         }
+
+            //         // ✅ 팝업 닫기 버튼 이벤트 추가 (세션 유지)
+            //         document.getElementById("close-popup-btn").addEventListener("click", function () {
+            //             console.log("📢 팝업 닫기 버튼 클릭됨!");
+            //             closePopup(sessionId);
+            //         });
+            //     })
+            //     .catch(error => console.error("❌ 세션 정보 가져오기 실패:", error));
+        });
+
+
+
+
+
     </script>
 </body>
+
 </html>
