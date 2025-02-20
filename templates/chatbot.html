@@ -634,35 +634,36 @@
         });
 
 
-            var dropArea = document.querySelector('body');
 
-            if (!dropArea) {
-                console.error('Drop area not found');
-                return;
-            }
+        var dropArea = document.querySelector('body');
 
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+        if (!dropArea) {
+            console.error('Drop area not found');
+            return;
+        }
 
-            function highlight(e) {
-                dropArea.classList.add('drag-over');
-            }
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
 
-            function unhighlight(e) {
-                dropArea.classList.remove('drag-over');
-            }
+        function highlight(e) {
+            dropArea.classList.add('drag-over');
+        }
 
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, highlight, false);
-            });
+        function unhighlight(e) {
+            dropArea.classList.remove('drag-over');
+        }
 
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, unhighlight, false);
-            });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
 
-            function updateChatbotUI(message) {
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function updateChatbotUI(message) {
                 let chatbotContainer = document.getElementById('chatbot-messages');
                 if (!chatbotContainer) {
                     console.error("❌ 챗봇 메시지 영역을 찾을 수 없음.");
@@ -677,6 +678,7 @@
             }
 
         });
+  
 
     </script>
 </body>
