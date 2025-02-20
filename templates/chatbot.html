@@ -343,6 +343,12 @@
                 <ul style="list-style:none;">
                     <!-- ✅ 챗봇 메시지를 표시할 영역 추가 -->
                     <div id="chatbot-messages" class="chat-container"></div>
+                    <!-- ✅ 감정 변화 그래프 -->
+                    <canvas id="emotionGraph" width="320" height="200"></canvas>
+                    <!-- ✅ 감정 비율 표시 -->
+                    <div id="emotionPercentages"></div>
+                    <!-- ✅ Chart.js 라이브러리 추가 -->
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 </ul>
             </div> <!-- end chat-history -->
 
@@ -625,45 +631,54 @@
             let receivedMessages = new Set();  // ✅ 받은 메시지를 저장하는 Set
 
             window.addEventListener("message", function (event) {
-            if (event.data && event.data.type === "chatbotMessage") {
-                if (receivedMessages.has(event.data.message)) return;  // ✅ 중복된 메시지는 무시
-                receivedMessages.add(event.data.message);
+                
+                if (event.data && event.data.type === "chatbotMessage") {
+                    if (receivedMessages.has(event.data.message)) return;  // ✅ 중복된 메시지는 무시
+                    receivedMessages.add(event.data.message);
 
-                updateChatbotUI(event.data.message);
+                    updateChatbotUI(event.data.message);
+                }
+
+                else if (event.data.type === "emotionData") {
+                    // ✅ 감정 분석 데이터를 UI에 표시 (GPT API 호출 ❌)
+                    console.log("📢 감정 데이터 수신:", event.data);
+                    drawEmotionGraph(event.data.emotionTimeline);
+                    showEmotionPercentages(event.data.emotionPercentages);
+                }
+
+            });
+
+
+
+            var dropArea = document.querySelector('body');
+
+            if (!dropArea) {
+                console.error('Drop area not found');
+                return;
             }
-        });
 
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
 
+            function highlight(e) {
+                dropArea.classList.add('drag-over');
+            }
 
-        var dropArea = document.querySelector('body');
+            function unhighlight(e) {
+                dropArea.classList.remove('drag-over');
+            }
 
-        if (!dropArea) {
-            console.error('Drop area not found');
-            return;
-        }
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
 
-        function highlight(e) {
-            dropArea.classList.add('drag-over');
-        }
-
-        function unhighlight(e) {
-            dropArea.classList.remove('drag-over');
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function updateChatbotUI(message) {
+            function updateChatbotUI(message) {
                 let chatbotContainer = document.getElementById('chatbot-messages');
                 if (!chatbotContainer) {
                     console.error("❌ 챗봇 메시지 영역을 찾을 수 없음.");
@@ -677,8 +692,79 @@
                 chatbotContainer.appendChild(messageElement);
             }
 
+            function drawEmotionGraph(emotionTimeline) {
+                let labels = emotionTimeline.map(entry => new Date(entry.timestamp * 1000).toLocaleTimeString());
+                let data = emotionTimeline.map(entry => entry.emotion);
+
+                let canvas = document.getElementById("emotionGraph");
+                if (!canvas) {
+                    console.error("❌ 감정 그래프를 표시할 요소가 없음!");
+                    return;
+                }
+
+                let ctx = canvas.getContext("2d");
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "감정 변화",
+                            data: data.map(emotion => emotionToNumber(emotion)),
+                            borderColor: "rgba(75, 192, 192, 1)",
+                            backgroundColor: "rgba(75, 192, 192, 0.2)",
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function (value) {
+                                        return numberToEmotion(value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function emotionToNumber(emotion) {
+                const mapping = {
+                    "화남": 1, "역겨움": 2, "두려움": 3, "웃음": 4, "슬픔": 5, "놀람": 6, "중립": 7
+                };
+                return mapping[emotion] || 0;
+            }
+
+            function numberToEmotion(number) {
+                const mapping = {
+                    1: "화남", 2: "역겨움", 3: "두려움", 4: "웃음", 5: "슬픔", 6: "놀람", 7: "중립"
+                };
+                return mapping[number] || "알 수 없음";
+            }
+
+            function showEmotionPercentages(emotionPercentages) {
+                let container = document.getElementById("emotionPercentages");
+                if (!container) {
+                    console.error("❌ 감정 비율을 표시할 요소가 없음!");
+                    return;
+                }
+
+                container.innerHTML = "";
+                for (const [emotion, percentage] of Object.entries(emotionPercentages)) {
+                    let p = document.createElement("p");
+                    p.innerHTML = `<strong>${emotion}</strong>: ${percentage}%`;
+                    container.appendChild(p);
+                }
+            }
+
+
+
+
         });
-  
+
+
 
     </script>
 </body>
