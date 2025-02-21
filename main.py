@@ -128,7 +128,6 @@ def chat_api():
 
     session["last_message"] = request_message  # ✅ 마지막 메시지 저장
 
-
     try:
 
         # ✅ 기본적인 페르소나 및 설정 (변경 가능!)
@@ -138,13 +137,13 @@ def chat_api():
             "길이": "짧게, 1줄로",
             "목적": "사용자의 질문에 알맞게 답변"
         }
-
+        
+        
 
         if "📢 분석 결과가 나왔어요!" in request_message:  # 가짜 챗봇 메세지를 바탕으로 gpt 응답 받기 (챗봇 구현 메세지 보내기 테스트용)
             # ✅ OpenAI GPT API를 통해 유머러스한 메시지 생성
             generated_analysis = chat_with_openai("이 사용자의 감정 분석 결과를 기반으로 유머러스하게 1줄,20자이내로 말해줘.")
             recommended_video_url = get_random_video()  # ✅ DB에서 Flask 라우트 형식의 영상 URL 가져오기
-            
             response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 \n\n 🎭 **분석 결과:** {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
         
         # ✅ 일반적인 메시지 처리
@@ -161,6 +160,7 @@ def chat_api():
 
         print("📢 챗봇 응답:", response_message)
         return jsonify({"response_message": Markup(response_message)})  # ✅ HTML 태그 적용
+
     
     except Exception as e:
         print(f"❌ `chat-api` 오류 발생: {e}")
@@ -288,12 +288,6 @@ def apply_filter(frame):
             # # ✅ 한글 & 이모티콘 표시 (폰트 크기 & 색상 조절)
             draw.text((x, y - 80), emotion_result, font=font, fill=(0, 166, 255))  # (RGB)
             white_background = np.array(frame_pil)  # PIL → OpenCV 변환
-
-
-
-
-
-
 
 
     # ✅ 4. 얼굴 표정 감지를 위한 FaceMesh 실행
@@ -433,12 +427,15 @@ def get_emotion_analysis(video_id, session_id):
     total_count = sum(emotion_counts.values())
     emotion_percentages = {emotion: round((count / total_count) * 100, 2) for emotion, count in emotion_counts.items()}
 
-    # ✅ 분석 결과 반환
+    # ✅ 추천 영상 추가 (여기서 추천 영상을 추가)
+    recommended_video_url = get_random_video()
+
+    # ✅ 분석 결과 반환 (추천 영상 포함)
     return jsonify({
         "emotions_over_time": emotions_over_time,
-        "emotion_percentages": emotion_percentages
+        "emotion_percentages": emotion_percentages,
+        "recommended_video_url": recommended_video_url,  # ✅ 추천 영상 URL 추가!
     })
-
 
 
 

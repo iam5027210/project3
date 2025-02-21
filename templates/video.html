@@ -221,6 +221,16 @@
 
             console.log("📢 `fetchEmotionAnalysis()` 응답:", response);  // ✅ 응답 확인
 
+
+            // ✅ 감정 데이터에서 "해석 불가" 제거
+            response.emotions_over_time = response.emotions_over_time.filter(entry => entry.emotion !== "해석 불가");
+
+            // ✅ 감정 비율 데이터에서도 "해석 불가" 제거
+            if (response.emotion_percentages["해석 불가"]) {
+                delete response.emotion_percentages["해석 불가"];
+            }
+
+
             // ✅ 감정 분석 응답이 정상적으로 도착했는지 확인
             if (response.error) {
                 console.error("❌ 감정 분석 데이터 오류:", response.error);
@@ -233,13 +243,18 @@
             let emotionPercentages = Object.entries(response.emotion_percentages)
                 .map(([emotion, percent]) => `${emotion} (${percent}%)`).join(", ");
 
+            let recommendedVideoUrl = response.recommended_video_url;
+
+            console.log("📢 `postMessage()` 보내기 전에 데이터 확인:", response);
+
             // ✅ 챗봇 iframe으로 감정 분석 데이터를 직접 전달
             let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
-            console.log("📢 `chatbotFrame emotionData 보내기:");  // ✅ chatbotFrame emotionData 보내기 확인
+
             chatbotFrame.postMessage({
                 type: "emotionData",
                 emotionTimeline: response.emotions_over_time,
-                emotionPercentages: response.emotion_percentages
+                emotionPercentages: response.emotion_percentages,
+                recommendedVideoUrl: recommendedVideoUrl  // ✅ 추천 영상 포함!
             }, "*");
 
             let chatbotMessage = `
@@ -262,12 +277,40 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log("📢 챗봇 응답 수신 완료:", data);
-                    if (data.response_message) {
+                    // if (data.response_message) {
+                    //     let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+                    //     chatbotFrame.postMessage({ type: "chatbotMessage", message: data.response_message }, "*");
+                    // } else {
+                    //     console.error("❌ 챗봇 응답이 없음.");
+                    // }
+
+                    // ✅ 응답이 배열인지 확인
+                    if (!data || data.length === 0) {
+                        console.error("❌ 챗봇 응답이 비어 있음.");
+                        return;
+                    }
+
+                    // ✅ 배열일 경우 각각의 메시지를 전송
+                    if (Array.isArray(data)) {
+                        data.forEach(msgObj => {
+                            if (msgObj.response_message) {
+                                let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+                                chatbotFrame.postMessage({ type: "chatbotMessage", message: msgObj.response_message }, "*");
+                            }
+                        });
+                    }
+                    // ✅ 단일 메시지일 경우
+                    else if (data.response_message) {
                         let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
                         chatbotFrame.postMessage({ type: "chatbotMessage", message: data.response_message }, "*");
                     } else {
                         console.error("❌ 챗봇 응답이 없음.");
                     }
+
+
+
+
+
                 })
                 .catch(error => console.error("❌ 챗봇 메시지 전송 실패:", error));
         }
