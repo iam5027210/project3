@@ -235,6 +235,7 @@
 
             // ✅ 챗봇 iframe으로 감정 분석 데이터를 직접 전달
             let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
+            console.log("📢 `chatbotFrame emotionData 보내기:");  // ✅ chatbotFrame emotionData 보내기 확인
             chatbotFrame.postMessage({
                 type: "emotionData",
                 emotionTimeline: response.emotions_over_time,
@@ -242,7 +243,6 @@
             }, "*");
 
             let chatbotMessage = `
-        🎬 영상이 끝났어요! 분석 결과를 알려드릴게요. 📊  
         ✅ **영상 감정 변화 흐름:**  
         ${emotionTimeline}  
 

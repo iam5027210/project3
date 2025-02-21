@@ -33,10 +33,10 @@ def chat_with_openai(message):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # ✅ GPT-3.5 사용 (비용 절감)
             messages=[
-                {"role": "system", "content": "너는 찐쳇 딜리버리봇으로, 사용자의 표정 분석 결과를 유머러스하게 전달하는 농담 많은 챗봇이야."},
+                {"role": "system", "content": "너는 찐반응 딜리버리봇으로, 사용자의 표정 분석 결과를 유머러스하게 1줄로 짧게 전달하는 챗봇이야."},
                 {"role": "user", "content": message}
             ],
-            max_tokens=100
+            max_tokens=40
         )
         return response.choices[0].message.content  # ✅ 올바른 방식으로 응답 추출
     except Exception as e:

@@ -130,15 +130,34 @@ def chat_api():
 
 
     try:
-        if "📢 분석 결과가 나왔어요!" in request_message:
+
+        # ✅ 기본적인 페르소나 및 설정 (변경 가능!)
+        auto_prompt_cmd = {
+            "어투": "반말 사용 금지",
+            "스타일": "유머러스하게",
+            "길이": "짧게, 1줄로",
+            "목적": "사용자의 질문에 알맞게 답변"
+        }
+
+
+        if "📢 분석 결과가 나왔어요!" in request_message:  # 가짜 챗봇 메세지를 바탕으로 gpt 응답 받기 (챗봇 구현 메세지 보내기 테스트용)
             # ✅ OpenAI GPT API를 통해 유머러스한 메시지 생성
             generated_analysis = chat_with_openai("이 사용자의 감정 분석 결과를 기반으로 유머러스하게 1줄,20자이내로 말해줘.")
             recommended_video_url = get_random_video()  # ✅ DB에서 Flask 라우트 형식의 영상 URL 가져오기
             
             response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 \n\n 🎭 **분석 결과:** {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
         
+        # ✅ 일반적인 메시지 처리
         else:
-            response_message = chat_with_openai(request_message)  # ✅ 일반 메시지는 OpenAI GPT 호출
+
+            # ✅ 질문 응답용 기본 설정
+            # auto_prompt_cmd.update({
+            #     "스타일": "이모티콘 2개이상 포함해 짧고 명확하게게",
+            #     "길이": "반드시 25자 이내",
+            #     "목적": "사용자의 질문에 알맞게 답변"
+            # })
+            prompt = f"{request_message} ({auto_prompt_cmd})"
+            response_message = chat_with_openai(prompt)
 
         print("📢 챗봇 응답:", response_message)
         return jsonify({"response_message": Markup(response_message)})  # ✅ HTML 태그 적용
@@ -351,13 +370,13 @@ def analyze_emotion_with_deepface(face_roi):
         #print(f"🎭 감정 분석 결과 (영어): {dominant_emotion}")
 
         # ✅ 영어 감정을 한글 + 이모티콘으로 변환
-        translated_emotion = emotion_translation.get(dominant_emotion, "🙂 알 수 없음")
-        print(f"🎭 감정 분석 결과 (한글): {translated_emotion}")
+        translated_emotion = emotion_translation.get(dominant_emotion, "해석 불가")
+        print(f"🎭 감정 분석 결과 : {translated_emotion}") # 한글
 
         return translated_emotion
     except Exception as e:
         print(f"⚠ 감정 분석 실패: {e}")
-        return "🤔 분석 불가"
+        return "해석 불가"  # ✅ 오류 발생 시 "해석불가" 반환
 
 
 
