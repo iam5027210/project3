@@ -123,7 +123,7 @@
 
         .chat .chat-history .message-data {
             margin-bottom: 15px;
-            font-size: 10px;
+            font-size: 12px;
         }
 
         .chat .chat-history .message-data-time {
@@ -164,7 +164,7 @@
         .chat .chat-history .other-message {
             border: 1px solid #8A8A8A;
             padding: 5px 10px;
-            font-size: 10px;
+            font-size: 12px;
             width: 90%;
             color: black;
         }
@@ -347,6 +347,8 @@
                     <canvas id="emotionGraph" width="320" height="200"></canvas>
                     <!-- ✅ 감정 비율 표시 -->
                     <div id="emotionPercentages"></div>
+                    <!-- ✅ 추천 영상 메시지를 표시할 영역 추가 -->
+                    <div id="chatbot-messages2" class="chat-container"></div>
                     <!-- ✅ Chart.js 라이브러리 추가 -->
                     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 </ul>
@@ -633,10 +635,12 @@
             window.addEventListener("message", function (event) {
 
                 if (event.data.type === "chatbotMessage") {
+
                     // ✅ 중복된 메시지가 들어오지 않도록 필터링
                     if (receivedMessages.has(event.data.message)) return;
                     receivedMessages.add(event.data.message);
                     updateChatbotUI(event.data.message);
+
                 }
 
                 else if (event.data.type === "emotionData") {
@@ -644,6 +648,14 @@
                     console.log("📢 감정 데이터 수신:", event.data);
                     drawEmotionGraph(event.data.emotionTimeline);
                     showEmotionPercentages(event.data.emotionPercentages);
+
+                    // ✅ 추천 영상 메시지를 chatbot-messages2에 추가
+                    if (event.data.recommendedVideoUrl) {
+                        console.log("📢 추천 영상 URL 수신:", event.data.recommendedVideoUrl);
+                        let recommendationMessage = `🎥 <a href='${event.data.recommendedVideoUrl}' target='_top'>추천 영상 보러 가기</a>`;
+                        console.log("📢 추천 영상 메시지 추가:", recommendationMessage);
+                        updateRecommendationUI(recommendationMessage);
+                    }
 
                     // ✅ 감정 그래프가 업데이트된 후 다시 확인
                     setTimeout(() => {
@@ -653,6 +665,9 @@
                         if (!graphElement) console.error("❌ 감정 그래프가 사라졌음!");
                         if (!percentagesElement) console.error("❌ 감정 비율이 사라졌음!");
                     }, 1000); // 1초 후 감정 그래프 상태 확인
+
+
+
                 }
 
 
@@ -718,9 +733,23 @@
                     }
                 }, 500);
 
+            }
 
+            function updateRecommendationUI(message) {
+                let recommendationContainer = document.getElementById('chatbot-messages2');
 
+                if (!recommendationContainer) {
+                    console.error("❌ 추천 영상 메시지를 표시할 영역(chatbot-messages2)이 없음!");
+                    return;
+                }
 
+                console.log("📢 추천 영상 메시지 추가:", message);
+
+                let messageElement = document.createElement('div');
+                messageElement.classList.add('chatbot-message');
+                messageElement.innerHTML = message;
+
+                recommendationContainer.appendChild(messageElement);  // ✅ chatbot-messages2에 추가
             }
 
             function drawEmotionGraph(emotionTimeline) {
