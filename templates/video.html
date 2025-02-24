@@ -163,10 +163,10 @@
 
 
             toggleWebcamVisibility(true);  // ✅ 웹캠을 기본적으로 표시
-            fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
-                .then(response => response.json())
-                .then(data => console.log("📢 얼굴 저장 시작:", data))
-                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+            // fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
+            //     .then(response => response.json())
+            //     .then(data => console.log("📢 얼굴 저장 시작:", data))
+            //     .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
         });
 
         function stopFaceSaving() {
@@ -323,6 +323,16 @@
                 events: {
                     'onStateChange': function (event) {
                         console.log("🎥 유튜브 상태 변경: ", event.data);
+
+                        if (event.data == YT.PlayerState.PLAYING) {
+                            console.log("▶ 영상 재생 시작됨! 얼굴 저장 시작!");
+
+                            fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
+                                .then(response => response.json())
+                                .then(data => console.log("📢 얼굴 저장 시작:", data))
+                                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+                        }
+
                         if (event.data == YT.PlayerState.ENDED) {
 
                             console.log("🎉 유튜브 영상 종료 감지! 챗봇 분석 실행");

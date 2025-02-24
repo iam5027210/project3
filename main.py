@@ -265,6 +265,7 @@ def apply_filter(frame):
             # ✅ 3. 얼굴 부분만 잘라서 배경이 흰색인 이미지에 넣기
             face_roi = frame[y:y+h_box, x:x+w_box]
             white_background[y:y+h_box, x:x+w_box] = face_roi
+            
 
             # ✅ 4. DeepFace 감정 분석 수행, # ✅ 감정 분석 실행 (한글 변환 적용)
             emotion_result = analyze_emotion_with_deepface(face_roi)
@@ -286,7 +287,7 @@ def apply_filter(frame):
             font = ImageFont.truetype(FONT_PATH_HANGUL, FONT_SIZE)
 
             # # ✅ 한글 & 이모티콘 표시 (폰트 크기 & 색상 조절)
-            draw.text((x, y - 80), emotion_result, font=font, fill=(0, 166, 255))  # (RGB)
+            draw.text((x, y - 80), emotion_result, font=font, fill=(101,31,212))  # (RGB)
             white_background = np.array(frame_pil)  # PIL → OpenCV 변환
 
 
