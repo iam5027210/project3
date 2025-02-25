@@ -68,12 +68,17 @@ face_collection = db["faces"]
 
 @app.route('/get_session_id')
 def get_session_id():
-    """ 현재 세션 ID 반환 """
-    if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())  # 새 세션 ID 생성
-        session['popup_shown'] = False  # ✅ 팝업을 표시했는지 여부 추가
-
-    return jsonify({"session_id": session['session_id'], "popup_shown": session['popup_shown']})
+    """ 기존 세션이 있으면 유지, 없으면 새로 생성 """
+    if 'session_id' in session:
+        print(f"📢 기존 세션 유지: {session['session_id']}")
+        return jsonify({"session_id": session['session_id']})
+    
+    
+    
+    # 새로운 세션 생성
+    session['session_id'] = str(uuid.uuid4())
+    print(f"🆕 새로운 세션 생성: {session['session_id']}")
+    return jsonify({"session_id": session['session_id']})
 
 
 
@@ -86,7 +91,7 @@ def start_saving_faces_api():
     """ video.html에서 얼굴 데이터 저장 시작 """
     global stop_saving_faces
     stop_saving_faces = False  # ✅ 얼굴 저장 시작
-    print("✅ 얼굴 데이터 저장 시작됨")
+    print("✅ stop_saving_faces = False")
     return jsonify({"status": "started"})
 
 @app.route('/stop_saving_faces', methods=['POST'])
@@ -94,7 +99,7 @@ def stop_saving_faces_api():
     """ 영상이 끝나거나 index.html로 돌아오면 얼굴 데이터 저장 중지 """
     global stop_saving_faces
     stop_saving_faces = True  # ✅ 저장 중지
-    print("🛑 얼굴 데이터 저장 중지됨")
+    print("🛑 stop_saving_faces = True")
     return jsonify({"status": "stopped"})
 
 
@@ -240,7 +245,7 @@ def apply_filter(frame):
 
     global stop_saving_faces
     if stop_saving_faces:
-        return frame  # ✅ 영상이 끝나면 원본 프레임만 반환 (저장 X)
+        return frame, frame, [], "해석 불가"  # ✅ 기본값 반환
 
 
     h, w, _ = frame.shape
@@ -327,14 +332,30 @@ def generate_frames(video_id="unknown", session_id="unknown_session"):
     global stop_saving_faces
     #cap = cv2.VideoCapture(0)
     last_saved_time = 0 # 마지막으로 저장된 시간
+
+    # ✅ video_id가 "none"이면 기본값 설정
+    if video_id in ["none", "unknown"]:
+        print("⚠ `generate_frames()`에서 video_id가 'none'으로 감지됨 → 기본값으로 설정")
+        video_id = "main"
     
+    print(f"📷 `generate_frames()` 시작됨 - video_id: {video_id}, session_id: {session_id}, {stop_saving_faces}")
+
+   
     while True:
         success, frame = cap.read()
         if not success:
-            break
+                print("❌ 카메라에서 프레임을 읽을 수 없음")
+                continue  
 
-       # ✅ 필터 적용 (저장 X, 필터만 처리)
-        filtered_frame, original_frame, landmarks, emotions = apply_filter(frame)  
+        # ✅ 필터 적용 (반환값 개수 검증 추가)
+        filter_result = apply_filter(frame)
+
+        if len(filter_result) != 4:
+            print(f"⚠ `apply_filter()`의 반환값 개수 오류: {len(filter_result)}개 반환됨")
+            continue  # 다음 프레임 처리
+
+        filtered_frame, original_frame, landmarks, emotions = filter_result  
+
         
         # ✅ landmarks가 리스트인지 확인 (안전한 처리)
         if not isinstance(landmarks, list):
@@ -344,17 +365,26 @@ def generate_frames(video_id="unknown", session_id="unknown_session"):
         current_time = time.time()
 
 
+
         # ✅ video_id가 'unknown'이면 저장 ❌ (메인 페이지에서 저장 방지)
-        if not stop_saving_faces and video_id not in ( "unknown", "none") and (current_time - last_saved_time >= 1.0):
+        if not stop_saving_faces and video_id not in ( "unknown", "none","main") and (current_time - last_saved_time >= 1.0):
             save_face_data(original_frame,emotions, landmarks,video_id, session_id)  # ✅ 저장은 여기에서만 실행
             last_saved_time = current_time  # ✅ 마지막 저장 시간을 업데이트
+        elif stop_saving_faces  and video_id not in ( "unknown", "none","main"):
+            pass
 
         # 웹캠 화면을 전달할 수 있도록 변환
         ret, buffer = cv2.imencode('.jpg', filtered_frame)
+            
+        if not ret:
+            print("❌ 프레임 인코딩 실패")
+            continue  # ✅ 다음 프레임 처리
+        
         frame = buffer.tobytes()
 
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 
 
 def analyze_emotion_with_deepface(face_roi):
@@ -391,10 +421,12 @@ def close_resources():
     cap.release()  # 프로그램 종료 시에만 카메라 해제
     mongo_cluster.close()
 
-@app.route('/video_feed/', defaults={'video_id': 'none', 'session_id': 'unknown_session'})      
+#@app.route('/video_feed/', defaults={'video_id': 'none', 'session_id': 'unknown_session'})    
+  
 @app.route('/video_feed/<video_id>/<session_id>')
 def video_feed(video_id, session_id):
     """ 영상 ID와 세션 ID를 전달하여 프레임 생성 """
+    print(f"📷 웹캠 스트리밍 요청 - video_id: {video_id}, session_id: {session_id}")
     return Response(generate_frames(video_id, session_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 # @app.route('/video_feed')
 # def video_feed():
@@ -402,8 +434,11 @@ def video_feed(video_id, session_id):
 
 @app.route('/get_emotion_analysis/<video_id>/<session_id>')
 def get_emotion_analysis(video_id, session_id):
+    
     """ MongoDB에서 특정 영상 & 세션의 감정 데이터를 가져와 분석 """
-
+    
+    print(f"📢 감정 분석 요청: video_id={video_id}, session_id={session_id}")
+    
     # ✅ 해당 영상 & 세션에 대한 얼굴 감정 데이터 가져오기
     face_data = list(face_collection.find(
         {"video_id": video_id, "session_id": session_id},
