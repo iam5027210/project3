@@ -127,7 +127,7 @@
 
     <!-- ✅ 얼굴 인식 화면 (크기 조정 가능, 숨길 수 있도록 변경) -->
     <div class="face-detection-container" id="face-detection-container">
-        <img id="webcam-feed" src="{{ url_for('video_feed', video_id=video_id, session_id='session123') }}">
+        <img id="webcam-feed" src="">
     </div>
 
 
@@ -139,35 +139,88 @@
     </div>
 
 
-    <a class="back-link" href="/" onclick="stopFaceSaving(); showWebcamAgain()">돌아가기</a>
+    <a class="back-link" href="/" onclick="saveSessionId()">돌아가기</a>
     <script>
-        let sessionId = "";  // ✅ 세션 ID 저장 변수
+
+
         let chatbotMessageSent = false;
+        let urlParams = new URLSearchParams(window.location.search);
+        let pathSegments = window.location.pathname.split("/");  // ✅ 경로에서 video_id 추출
+        let videoId = pathSegments[2];  // ✅ "/video/{video_id}" 구조이므로, 배열의 2번째 요소      
+        let sessionId = urlParams.get('session_id');
+        let isRecommended = urlParams.get('recommended');  // ✅ 추천 영상 여부 확인
+        let clickCount = urlParams.get('click_count');  // ✅ 추천 영상 클릭 횟수
+        let lastClickCount = localStorage.getItem("last_recommended_click_count");          // ✅ 마지막으로 저장된 클릭 횟수
+
+        console.log("🛑세션 id1 - video:", sessionId)
+        console.log("🛑비디오 id1- video:", videoId)
 
         document.addEventListener("DOMContentLoaded", function () {
 
-            fetch('/get_session_id')  // ✅ 세션 ID 요청
-                .then(response => response.json())
-                .then(data => {
-                    sessionId = data.session_id;
-                    let videoId = "{{ video_id }}";  // ✅ Jinja에서 video_id 가져오기
-                    let webcamFeed = document.getElementById("webcam-feed");
-                    if (videoId) {
-                        webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 동적으로 세션 반영
-                    } else {
-                        console.error("❌ video_id가 정의되지 않음!");
-                    }
-                    //document.getElementById("webcam-feed").src = `/video_feed/{{ video_id }}/${sessionId}`;  // ✅ 동적으로 세션 반영
-                })
-                .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+            let sessionId = sessionStorage.getItem("session_id") || localStorage.getItem("last_session_id");
+            if (!videoId || videoId === "null" || videoId === "none") {
+                console.warn("⚠ videoId가 올바르지 않음 → 기본값 설정");
+                videoId = "main";
+            }
+            if (!sessionId) {
+                fetch('/get_session_id')
+                    .then(response => response.json())
+                    .then(data => {
+
+                        sessionStorage.setItem("session_id", data.session_id);
+                        sessionId = data.session_id;
+                        console.log("🛑세션 id2 - video:", sessionId)
+                        localStorage.setItem("last_session_id", data.session_id);
+                        updateWebcamFeed(videoId, sessionId);
+                    })
+                    .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+            } else {
+                updateWebcamFeed(videoId, sessionId);
+            }
+            // // ✅ 추천 영상 클릭 시 필터 강제 적용
+            // if (isRecommended === "true") {
+            //     console.log("🔄 추천 영상 클릭 감지 → 필터 강제 적용");
+            //     setTimeout(() => {
+            //         updateWebcamFeed(videoId, sessionId);
+
+            //         // ✅ isRecommended 값을 false로 변경
+            //         urlParams.delete("recommended");
+            //         let newUrl = window.location.pathname + "?" + urlParams.toString();
+            //         window.history.replaceState({}, document.title, newUrl);
+            //         console.log("✅ 추천 영상 적용 후 recommended 삭제 완료:", newUrl);
+            //     }, 100);  // ✅ 0.5초 후 필터 적용
+            // }
+
+            function updateWebcamFeed(videoId, sessionId) {
+                console.log("🛑비디오 id2- video:", videoId)
 
 
+                if (!sessionId || sessionId === "null") {
+                    console.error("❌ `sessionId`가 올바르지 않음:", sessionId);
+                    return;
+                }
+                let webcamFeed = document.getElementById("webcam-feed");
+                webcamFeed.src = `/video_feed/${encodeURIComponent(videoId)}/${encodeURIComponent(sessionId)}`;
+                console.log("📷 웹캠 피드 업데이트:", webcamFeed.src);
+                fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
+                                .then(response => response.json())
+                                .then(data => console.log("📢 얼굴 저장 시작:", data))
+                                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+            }
             toggleWebcamVisibility(true);  // ✅ 웹캠을 기본적으로 표시
-            // fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
-            //     .then(response => response.json())
-            //     .then(data => console.log("📢 얼굴 저장 시작:", data))
-            //     .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+
         });
+
+        function saveSessionId() {
+            let sessionId = sessionStorage.getItem("session_id");
+            if (sessionId) {
+                localStorage.setItem("last_session_id", sessionId);
+            }
+            fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
+                                .then(response => response.json())
+                                .then(data => console.log("📢 얼굴 저장 시작:", data))
+                                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+        }
 
         function stopFaceSaving() {
             fetch('/stop_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 중지 요청
@@ -201,59 +254,60 @@
 
         async function fetchEmotionAnalysis() {
             console.log("✅ `fetchEmotionAnalysis()` 실행됨!");
+            // let urlParams = new URLSearchParams(window.location.search);
+            // let videoId = urlParams.get("video_id");
+            // let sessionId = urlParams.get("session_id") || sessionStorage.getItem("session_id");
+            // ✅ URL을 안전하게 생성
+            let apiUrl = `/get_emotion_analysis/${encodeURIComponent(videoId)}/${encodeURIComponent(sessionId)}`;
 
-            const videoId = "{{ video_id }}";  // ✅ 현재 영상 ID 가져오기
-            const response = await fetch(`/get_emotion_analysis/${videoId}/${sessionId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`❌ 서버 오류 발생: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .catch(error => {
-                    console.error("❌ 감정 분석 요청 실패:", error);
-                });
+            // const videoId = "{{ video_id }}";  // ✅ 현재 영상 ID 가져오기
+            const response = await fetch(apiUrl)
+            if (!response.ok) {
+                throw new Error(`❌ 서버 오류 발생: ${response.status}`);
+            }
 
-            if (!response) {
+            const data = await response.json();  // ✅ JSON 변환을 한 번만 수행
+
+            if (!data) {
                 console.error("❌ 감정 분석 응답이 없음!");
                 return;
             }
 
-            console.log("📢 `fetchEmotionAnalysis()` 응답:", response);  // ✅ 응답 확인
+            console.log("📢 `fetchEmotionAnalysis()` 응답:", data);  // ✅ 응답 확인
 
 
             // ✅ 감정 데이터에서 "해석 불가" 제거
-            response.emotions_over_time = response.emotions_over_time.filter(entry => entry.emotion !== "해석 불가");
+            data.emotions_over_time = data.emotions_over_time.filter(entry => entry.emotion !== "해석 불가");
 
             // ✅ 감정 비율 데이터에서도 "해석 불가" 제거
-            if (response.emotion_percentages["해석 불가"]) {
-                delete response.emotion_percentages["해석 불가"];
+            if (data.emotion_percentages["해석 불가"]) {
+                delete data.emotion_percentages["해석 불가"];
             }
 
 
             // ✅ 감정 분석 응답이 정상적으로 도착했는지 확인
-            if (response.error) {
-                console.error("❌ 감정 분석 데이터 오류:", response.error);
+            if (data.error) {
+                console.error("❌ 감정 분석 데이터 오류:", data.error);
                 return;
             }
 
-            let emotionTimeline = response.emotions_over_time.map(entry =>
+            let emotionTimeline = data.emotions_over_time.map(entry =>
                 `${new Date(entry.timestamp * 1000).toLocaleTimeString()} - ${entry.emotion}`).join("\n");
 
-            let emotionPercentages = Object.entries(response.emotion_percentages)
+            let emotionPercentages = Object.entries(data.emotion_percentages)
                 .map(([emotion, percent]) => `${emotion} (${percent}%)`).join(", ");
 
-            let recommendedVideoUrl = response.recommended_video_url;
+            let recommendedVideoUrl = data.recommended_video_url;
 
-            console.log("📢 `postMessage()` 보내기 전에 데이터 확인:", response);
+            console.log("📢 `postMessage()` 보내기 전에 데이터 확인:", data);
 
             // ✅ 챗봇 iframe으로 감정 분석 데이터를 직접 전달
             let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;
 
             chatbotFrame.postMessage({
                 type: "emotionData",
-                emotionTimeline: response.emotions_over_time,
-                emotionPercentages: response.emotion_percentages,
+                emotionTimeline: data.emotions_over_time,
+                emotionPercentages: data.emotion_percentages,
                 recommendedVideoUrl: recommendedVideoUrl  // ✅ 추천 영상 포함!
             }, "*");
 
@@ -308,9 +362,6 @@
                     }
 
 
-
-
-
                 })
                 .catch(error => console.error("❌ 챗봇 메시지 전송 실패:", error));
         }
@@ -325,6 +376,7 @@
                         console.log("🎥 유튜브 상태 변경: ", event.data);
 
                         if (event.data == YT.PlayerState.PLAYING) {
+
                             console.log("▶ 영상 재생 시작됨! 얼굴 저장 시작!");
 
                             fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청

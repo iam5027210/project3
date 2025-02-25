@@ -646,16 +646,56 @@
                 else if (event.data.type === "emotionData") {
                     // ✅ 감정 분석 데이터를 UI에 표시 (GPT API 호출 ❌)
                     console.log("📢 감정 데이터 수신:", event.data);
+                    // ✅ `session_id`를 `sessionStorage`에서 가져옴
+                    let currentSessionId = sessionStorage.getItem("session_id") || "";
+
+                    if (!currentSessionId) {
+                        console.warn("⚠ `session_id`가 없음! 서버에서 가져오기 시도...");
+                        fetch('/get_session_id')
+                            .then(response => response.json())
+                            .then(data => {
+                                currentSessionId = data.session_id;
+                                sessionStorage.setItem("session_id", currentSessionId);  // ✅ sessionStorage에 저장
+                            })
+                            .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
+                    }
+
                     drawEmotionGraph(event.data.emotionTimeline);
                     showEmotionPercentages(event.data.emotionPercentages);
 
                     // ✅ 추천 영상 메시지를 chatbot-messages2에 추가
                     if (event.data.recommendedVideoUrl) {
+
+                        let currentSessionId = sessionStorage.getItem("session_id");  // ✅ 현재 세션 ID 가져오기
+                        let videoId = getVideoIdFromUrl(event.data.recommendedVideoUrl);
+
+                        let recommendedUrl = `${event.data.recommendedVideoUrl}?video_id=${videoId}&session_id=${currentSessionId}&recommended=true`;
+
                         console.log("📢 추천 영상 URL 수신:", event.data.recommendedVideoUrl);
-                        let recommendationMessage = `🎥 <a href='${event.data.recommendedVideoUrl}' target='_top'>추천 영상 보러 가기</a>`;
+                        let recommendationMessage = `🎥 <a href="${recommendedUrl}" target='_top'>추천 영상 보러 가기</a>
+            `;
                         console.log("📢 추천 영상 메시지 추가:", recommendationMessage);
                         updateRecommendationUI(recommendationMessage);
                     }
+
+
+                    // ✅ 유튜브 URL에서 video_id를 추출하는 함수
+                    function getVideoIdFromUrl(url) {
+                        if (!url) return null; // URL이 없을 경우 안전하게 처리
+
+                        let videoId = null;
+
+                        if (url.includes("watch?v=")) {
+                            videoId = url.split("watch?v=")[1].split("&")[0];
+                        } else if (url.includes("/shorts/")) {
+                            videoId = url.split("/shorts/")[1].split("?")[0];
+                        } else {
+                            videoId = url.split("/").pop().split("?")[0];
+                        }
+
+                        return videoId;
+                    }
+
 
                     // ✅ 감정 그래프가 업데이트된 후 다시 확인
                     setTimeout(() => {

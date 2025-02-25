@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>재생 목록</title>
     <style>
-        /* ✅ 전체 배경을 완전 블랙으로 변경 */ 
-     
+        /* ✅ 전체 배경을 완전 블랙으로 변경 */
+
         body {
             font-family: 'Arial', sans-serif;
             text-align: center;
@@ -81,18 +81,15 @@
             /* 부드러운 흰색 (눈에 덜 피로함) */
 
         }
-    
 
-        
+
+
 
         /* ✅ 웹캠 스트리밍 컨테이너 */
         #webcam-container {
             text-align: center;
             margin-bottom: 20px;
         }
-
-
-
     </style>
 </head>
 
@@ -103,7 +100,7 @@
 
     <!-- ✅ 웹캠 스트리밍 컨테이너 (기본적으로 보이도록 설정) -->
     <div id="webcam-container">
-        <img id="webcam-feed" src="/video_feed" style="width:200px; height:auto; border-radius:10px;">
+        <img id="webcam-feed" src="" style="width:200px; height:auto; border-radius:10px;">
     </div>
 
     <div class="video-container">
@@ -117,7 +114,7 @@
             {% else %}
             {% set video_id = raw_url.split('/')[-1].split('?')[0] %}
             {% endif %}
-            <a href="/video/{{ video_id }}">
+            <a class="video-link" href="/video/{{ video_id }}?session_id=">
                 <img src="https://img.youtube.com/vi/{{ video_id }}/0.jpg" alt="{{ video.get('title', 'No Title') }}">
                 <p>{{ video.get('title', video_id) }}</p>
             </a>
@@ -131,79 +128,53 @@
 
 
 
-
-
-
         // ✅ 웹캠 화면을 숨길 수 있도록 조작하는 함수
         function toggleWebcamVisibility(visible) {
             document.getElementById("webcam-container").style.display = visible ? "block" : "none";
         }
 
-        // // ✅ 페이지가 로드될 때 기본적으로 웹캠을 실행하고, 이후 제어 가능
-        // document.addEventListener("DOMContentLoaded", function () {
-        //     toggleWebcamVisibility(true); // 기본적으로 웹캠 표시
-        // });
-
-
         document.addEventListener("DOMContentLoaded", function () {
-            fetch('/get_session_id')  // ✅ 세션 ID 요청
-                .then(response => response.json())
-                .then(data => {
-                    sessionId = data.session_id;
-                    let webcamFeed = document.getElementById("webcam-feed");
-                    webcamFeed.src = `/video_feed/${videoId}/${sessionId}`;  // ✅ 올바른 URL 형식 적용
-                })
-                .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
-            // ✅ 팝업창에서 웹캠 실행
-           // document.getElementById("popup").style.display = "flex";
-            //toggleWebcamVisibility(false);  // ✅ 웹캠 기본 표시  
+            let storedSessionId = sessionStorage.getItem("session_id");
+            console.log("🛑Existing 세션 id1 - index:", storedSessionId)
 
-            // ✅ localStorage에서 '오늘 하루 닫기' 설정 확인
-            let popupClosedToday = localStorage.getItem("popupClosedToday");
+            if (!storedSessionId) {
+                fetch('/get_session_id')
+                    .then(response => response.json())
+                    .then(data => {
+                        sessionStorage.setItem("session_id", data.session_id);
 
-            if (popupClosedToday === "true") {
-                console.log("🛑 오늘 하루 동안 팝업 표시 안함");
-                document.getElementById("popup").style.display = "none";
-                document.getElementById("webcam-container").classList.add("hidden"); // 웹캠 숨김
+                        console.log("🛑New 세션 id2 - index:", data.session_id)
+                        updateWebcamFeed(data.session_id);
+                        updateVideoLinks(data.session_id); // ✅ 세션 할당 후 링크 업데이트
+                    })
+                    .catch(error => console.error("❌ 세션 ID 요청 실패:", error));
             } else {
-                console.log("✅ 팝업 표시");
-                document.getElementById("popup").style.display = "flex"; // 팝업 표시
+                console.log("🛑Existing세션 id3 - index:", storedSessionId)
+                updateWebcamFeed(storedSessionId);
+                updateVideoLinks(storedSessionId); // ✅ 기존 세션이 있으면 바로 링크 업데이트
             }
 
-            // ✅ 팝업 닫기 버튼 이벤트 추가
-            document.getElementById("close-popup-btn").addEventListener("click", function () {
-                closePopup();
-            });
-            // ✅ 서버에서 세션 ID 및 팝업 상태 가져오기
-            // fetch('/get_session_id')
-            //     .then(response => response.json())
-            //     .then(data => {
-            //         let sessionId = data.session_id;  // ✅ 서버에서 가져온 세션 ID 사용
-            //         let popupShown = data.popup_shown;
-            //         console.log("✅ 현재 세션 ID:", sessionId, "| 팝업 표시 여부:", popupShown);
 
-            //         // ✅ 세션에서 팝업이 닫혔는지 확인
-            //         if (!popupShown) {
-            //             console.log("✅ 새 세션 - 팝업 표시");
-            //             document.getElementById("popup").style.display = "flex"; // 팝업 표시
-            //         } else {
-            //             console.log("🛑 이전에 방문한 세션 - 팝업 표시 안함");
-            //             document.getElementById("popup").style.display = "none";
-            //             document.getElementById("webcam-container").classList.add("hidden"); // 웹캠 숨김
-            //         }
 
-            //         // ✅ 팝업 닫기 버튼 이벤트 추가 (세션 유지)
-            //         document.getElementById("close-popup-btn").addEventListener("click", function () {
-            //             console.log("📢 팝업 닫기 버튼 클릭됨!");
-            //             closePopup(sessionId);
-            //         });
-            //     })
-            //     .catch(error => console.error("❌ 세션 정보 가져오기 실패:", error));
+            function updateWebcamFeed(sessionId) {
+                let webcamFeed = document.getElementById("webcam-feed");
+                webcamFeed.src = `/video_feed/none/${sessionId}`;
+            }
+            function updateVideoLinks(sessionId) {
+                // ✅ sessionId가 존재하는 경우에만 실행
+                if (!sessionId) return;
+
+                // ✅ 모든 비디오 링크에 session_id 추가
+                document.querySelectorAll(".video-link").forEach(link => {
+                    let videoUrl = new URL(link.href, window.location.origin);
+                    videoUrl.searchParams.set("session_id", sessionId);
+                    link.href = videoUrl.href;
+                });
+
+                console.log("✅ 모든 비디오 링크에 세션 ID 추가 완료:", sessionId);
+            }
+
         });
-
-
-
-
 
     </script>
 </body>
