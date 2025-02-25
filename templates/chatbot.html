@@ -40,7 +40,6 @@
             margin: 0;
             padding: 15px 15px 0 15px;
         }
-
         html,
         body {
             height: 100%;
@@ -56,11 +55,11 @@
             max-width: 320px;
             width: 100%;
             height: auto;
-            max-height: 450px;
+            max-height: 640px;
             background: white;
             padding: 10px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 2px rgba(219, 219, 219, 0.2);
             overflow: hidden;
         }
 
@@ -97,7 +96,7 @@
             border-bottom: 4px solid white;
             align-items: center;
             justify-content: center;
-            background-color: #F4F4F4;
+            background-color: rgb(253, 233, 233); /* 연한 복숭아색 */
         }
 
         .chat .chat-header .chat-about {
@@ -110,7 +109,7 @@
         .chat .chat-history {
             max-width: 320px;
             width: 320px;
-            height: 400px;
+            height: 450px;
             overflow-y: auto;
             word-wrap: break-word;
             white-space: normal;
@@ -176,7 +175,7 @@
 
         .chat .chat-message {
             padding: 5px 15px 0px 15px;
-            background-color: #EFEFEF;
+            background-color: rgb(253, 233, 233); /* 연한 복숭아색 */
         }
 
         .chat .chat-message textarea {
@@ -187,7 +186,7 @@
             border-radius: 15px;
             resize: none;
             margin-bottom: 20px;
-            max-width: 380px;
+            max-width: 420px;
             /* ✅ 입력 필드 크기 제한 */
             word-wrap: break-word;
             white-space: normal;
@@ -326,6 +325,7 @@
             padding: 0 10px;
             border-radius: 10px;
         }
+ 
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js"></script>
 </head>
@@ -335,7 +335,7 @@
         <div class="chat">
             <div class="chat-header clearfix">
                 <img style="width:60px; border-radius:50px; margin-left:10px;"
-                    src="{{ url_for('static', filename='images/img4.webp') }}" alt="avatar" />
+                    src="{{ url_for('static', filename='images/img7.webp') }}" alt="avatar" />
                 <div class="chat-about">찐반응 딜리버리봇</div>
             </div> <!-- end chat-header -->
 
