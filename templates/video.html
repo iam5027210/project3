@@ -6,114 +6,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>영상 재생</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-            background-color: #000000;
-            /* 완전 블랙 */
-        }
+      /* ✅ 전체 배경을 밝은 복숭아색 계열로 변경 */
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+        background-color: #FFF3E0; /* 연한 복숭아색 */
+        color: #333333;
+    }
 
-        .video-container {
-            margin-top: 20px;
-        }
+    /* ✅ 비디오 컨테이너 */
+    .video-container {
+        margin-top: 20px;
+        
+    }
 
-        .back-link {
-            margin-top: 20px;
-            display: block;
-            text-align: center;
-            /* ✅ 중앙 정렬 */
-            font-size: 16px;
-            font-weight: bold;
-        }
+    /* ✅ 뒤로 가기 링크 */
+    .back-link {
+        margin-top: 20px;
+        display: block;
+        text-align: center;
+        font-size: 30px;
+        font-weight: bold;
+        color: #E65100; /* 짙은 오렌지 */
+    }
 
-        iframe {
-            width: 70%;
-            height: 450px;
-            border: none;
-        }
+    /* ✅ 유튜브 iframe */
+    iframe {
+        width: 70%;
+        height: 450px;
+        border: none;
+    }
 
-        .face-detection-container {
-            position: fixed;
-            top: 0px;
-            /* 화면 상단 */
-            right: 0px;
-            /* 오른쪽 상단 */
-            width: 180px;
-            /* 적절한 크기로 조절 */
-            height: auto;
-            z-index: 1000;
-            background: rgba(223, 222, 222, 0.7);
-            /* 반투명 배경 */
-            border-radius: 5px;
-            padding: 5px;
-        }
+    /* ✅ 얼굴 감지 컨테이너 */
+    .face-detection-container {
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        width: 180px;
+        height: auto;
+        z-index: 1000;
+        background: #FFF3E0; /* 연한 복숭아색 */
+              
+        border-radius: 2px;
+        border: 1px solid #ffc8b7; /* 연한 오렌지 테두리 */
+        padding: 5px;
+    }
 
-        .face-detection-container img {
-            width: 100%;
-            height: auto;
-            border-radius: 5px;
-        }
+    .face-detection-container img {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
 
-        .chatbot-container {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 340px;
-            height: 590px;
-            background: white;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            z-index: 1000;
-            text-align: center;
-            overflow: hidden;
-            /* ✅ 내부 요소가 넘쳐도 크기 유지 */
-        }
+    /* ✅ 챗봇 컨테이너 */
+    .chatbot-container {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 340px;
+        height: 640px;
+        background: #FFFFFF; /* 화이트 */
+        border: 2px solid  #ffc8b7; /* 연한 오렌지 테두리 */
+        border-radius: 10px;
+        z-index: 1000;
+        text-align: center;
+        overflow: hidden;
+    }
 
-        .chatbot-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            max-height: 590px;
-            /* ✅ iframe 높이를 강제 고정 */
-            overflow: hidden;
-            /* ✅ 내부 요소가 크기를 변경하지 못하도록 설정 */
-        }
+    .chatbot-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        max-height: 640px;
+        overflow: hidden;
+    }
 
-        .chatbot-close {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 30px;
-            font-weight: bold;
-        }
+    /* ✅ 챗봇 닫기 버튼 */
+    .chatbot-close {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        cursor: pointer;
+        font-size: 30px;
+        font-weight: bold;
+        color:  #E65100; /* 오렌지 */
+    }
 
-        /* 얼굴 감정 분석 결과를 얼굴 화면 위에 표시 */
-        .emotion-overlay {
-            position: fixed;
-            top: 10px;
-            /* 얼굴 위에 표시 */
-            right: 200px;
-            /* 얼굴 인식 창에 맞게 위치 조정 */
-            font-size: 30px;
-            font-weight: bold;
-            color: rgb(255, 166, 0);
-            background: rgba(255, 255, 255, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 1001;
-            /* 얼굴 인식 화면보다 위에 표시되도록 */
-        }
+    /* ✅ 감정 분석 결과 */
+    .emotion-overlay {
+        position: fixed;
+        top: 10px;
+        right: 200px;
+        font-size: 30px;
+        font-weight: bold;
+        color:  #FFF3E0; /* 연한 복숭아색 */
+        background:  #ffc8b7; /* 연한 오렌지 테두리 */
+        padding: 15px;
+        border-radius: 10px;
+        z-index: 1001;
+    }
+    .logo-text {
+    font-family: "Malgun Gothic", sans-serif; /* ✅ 맑은 고딕 폰트 적용 */
+    font-size: 35px; /* ✅ 글씨 크기 */
+    font-weight: bold; /* ✅ 두껍게 */
+    color: #E65100; /* ✅ 기본 색상 설정 (이모티콘 적용을 위해 필요) */
+    background: linear-gradient(to right, #FFB74D, #FF7043); /* ✅ 오렌지 그라디언트 효과 */
+    -webkit-background-clip: text; /* ✅ 글씨 내부에만 색상을 적용 */
+    -webkit-text-fill-color: transparent; /* ✅ 투명 텍스트로 배경 효과 */
+    text-align: center; /* ✅ 중앙 정렬 */
+    padding: 10px 20px; /* ✅ 적절한 패딩 추가 */
+    display: inline-block; /* ✅ 크기를 글자에 맞게 조정 */
+    white-space: nowrap; /* ✅ 줄바꿈 방지 */
+}
     </style>
 </head>
 
 <body>
 
 
-    <h1>영상 재생</h1>
+    <h1  class="logo-text">영상 재생</h1>
     <div class="video-container">
         <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?autoplay=1&enablejsapi=1"
             frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
@@ -135,7 +149,7 @@
     <div class="chatbot-container" id="chatbot">
         <span class="chatbot-close" onclick="closeChatbot()">×</span>
 
-        <iframe id="chatbotFrame" src="/chatbot_page" width="340" height="590" style="border: none;"></iframe>
+        <iframe id="chatbotFrame" src="/chatbot_page" width="340" height="640" style="border: none;"></iframe>
     </div>
 
 
