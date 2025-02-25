@@ -203,9 +203,9 @@
                 webcamFeed.src = `/video_feed/${encodeURIComponent(videoId)}/${encodeURIComponent(sessionId)}`;
                 console.log("📷 웹캠 피드 업데이트:", webcamFeed.src);
                 fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
-                                .then(response => response.json())
-                                .then(data => console.log("📢 얼굴 저장 시작:", data))
-                                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+                    .then(response => response.json())
+                    .then(data => console.log("📢 얼굴 저장 시작:", data))
+                    .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
             }
             toggleWebcamVisibility(true);  // ✅ 웹캠을 기본적으로 표시
 
@@ -217,9 +217,9 @@
                 localStorage.setItem("last_session_id", sessionId);
             }
             fetch('/start_saving_faces', { method: 'POST' })  // ✅ 얼굴 저장 시작 요청
-                                .then(response => response.json())
-                                .then(data => console.log("📢 얼굴 저장 시작:", data))
-                                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
+                .then(response => response.json())
+                .then(data => console.log("📢 얼굴 저장 시작:", data))
+                .catch(error => console.error("❌ 얼굴 저장 시작 요청 실패:", error));
         }
 
         function stopFaceSaving() {
@@ -326,7 +326,10 @@
             fetch('/chat-api', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ "message": message })
+                body: new URLSearchParams({
+                    "message": message,
+                    "analysis_mode": new URLSearchParams(window.location.search).get("analysis_mode") || ""  // ✅ URL에서 모드 가져와서 전달
+                })
             })
                 .then(response => response.json())
                 .then(data => {
