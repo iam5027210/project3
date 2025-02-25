@@ -672,11 +672,13 @@
                         let recommendedUrl = `${event.data.recommendedVideoUrl}?video_id=${videoId}&session_id=${currentSessionId}&recommended=true`;
 
                         console.log("📢 추천 영상 URL 수신:", event.data.recommendedVideoUrl);
-                        let recommendationMessage = `🎥 <a href="${recommendedUrl}" target='_top'>추천 영상 보러 가기</a>
-            `;
+                        let recommendationMessage = `🎥 <a href='${recommendedUrl}' target='_top'>추천 영상 보러가기`;
                         console.log("📢 추천 영상 메시지 추가:", recommendationMessage);
-                        updateRecommendationUI(recommendationMessage);
+                        updateRecommendationUI(recommendationMessage, recommendedUrl);
                     }
+
+
+
 
 
                     // ✅ 유튜브 URL에서 video_id를 추출하는 함수
@@ -775,7 +777,7 @@
 
             }
 
-            function updateRecommendationUI(message) {
+            function updateRecommendationUI(message, videoUrl) {
                 let recommendationContainer = document.getElementById('chatbot-messages2');
 
                 if (!recommendationContainer) {
@@ -787,10 +789,26 @@
 
                 let messageElement = document.createElement('div');
                 messageElement.classList.add('chatbot-message');
-                messageElement.innerHTML = message;
+
+                // ✅ 사용자에게 분석 모드 선택 버튼 제공
+                let selectionUI = `
+                    <p>🎥 추천 영상 보러가기 - 분석 모드 선택:</p>
+                    <button onclick="applyAnalysisMode('${videoUrl}', 'mbti')">🔍 MBTI 스타일</button>
+                    <button onclick="applyAnalysisMode('${videoUrl}', 'character')">🎭 영화/게임 캐릭터</button>
+                    <button onclick="applyAnalysisMode('${videoUrl}', 'emotion')">😊 감정 유형</button>
+                `;
+
+
+
+
+                // messageElement.innerHTML = message;
+                messageElement.innerHTML = selectionUI;
 
                 recommendationContainer.appendChild(messageElement);  // ✅ chatbot-messages2에 추가
             }
+
+
+
 
             function drawEmotionGraph(emotionTimeline) {
 
@@ -881,9 +899,14 @@
 
 
 
-
         });
 
+            // ✅ 사용자가 선택한 분석 모드를 URL에 추가하는 함수
+            function applyAnalysisMode(videoUrl, mode) {
+                let updatedUrl = `${videoUrl}&analysis_mode=${mode}`;
+                console.log("📢 선택된 분석 모드:", mode);
+                window.top.location.href = updatedUrl;  // ✅ 선택된 모드로 URL 이동
+            }
 
 
     </script>

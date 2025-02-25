@@ -114,17 +114,25 @@ def home():
 
 @app.route('/video/<video_id>')
 def video_page(video_id):
-    return render_template('video.html', video_id=video_id, messageTime=currTime())
+    # ✅ URL에서 analysis_mode 값을 가져옴 (없으면 기본값 None)
+    analysis_mode = request.args.get("analysis_mode", None)
+    
+    print(f"📢 영상 페이지 로드됨 - 분석 모드: {analysis_mode}")
+    return render_template('video.html', video_id=video_id, messageTime=currTime(), analysis_mode=analysis_mode)
 
 @app.route('/chatbot_page')
 def chatbot_page():
     return render_template('chatbot.html',messageTime=currTime())
 
 
+
+
 @app.route('/chat-api', methods=['POST'])
 def chat_api():
-    request_message = request.form.get("message")     
-    print("📢 수신된 메시지:", request_message)
+    global mbti_mode
+    request_message = request.form.get("message")  
+    analysis_mode = request.form.get("analysis_mode", request.args.get("analysis_mode", None))  # ✅ POST + GET 지원 
+    print(f"📢 수신된 메시지: {request_message}, 현재 분석 모드: {analysis_mode}")
 
         # ✅ GPT 요청 중복 실행 방지
     if session.get("last_message") == request_message:
@@ -151,17 +159,45 @@ def chat_api():
             recommended_video_url = get_random_video()  # ✅ DB에서 Flask 라우트 형식의 영상 URL 가져오기
             response_message = f"👋 안녕하세요! 영상을 다 보셨네요! 😊 \n\n 🎭 **분석 결과:** {generated_analysis} \n\n 🎥 <a href='{recommended_video_url}' target='_top'>추천 영상 보러 가기</a>"  
         
+        elif analysis_mode == "mbti":
+            print("🔹 MBTI 모드 활성화됨 - MBTI 스타일로 GPT 응답 생성")
+            # ✅ MBTI 스타일 감정 분석 요청
+            prompt = f"""
+            사용자의 감정 변화 데이터를 기반으로, MBTI 스타일 분석을 해줘.
+            사용자의 감정 패턴을 MBTI 유형처럼 분류하고, 성격을 해석해줘.
+            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자자 이내로 짧게 만들어줘!
+
+            감정 변화 데이터:
+            {request_message}
+            """
+        elif analysis_mode == "character":
+            print("🔹 영화/게임 캐릭터 모드 활성화됨")
+            prompt = f"""
+            사용자의 감정 변화를 심리 테스트 결과처럼 분석해줘.
+            유형을 재미있는 별명이나 성격 패턴으로 분류하고,
+            감정을 롤러코스터, 게임 캐릭터, 점수 등으로 설명해줘.
+            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자자 이내로 짧게 만들어줘!
+
+            감정 변화 데이터:
+            {request_message}
+            """
+        elif analysis_mode == "emotion":
+            print("🔹 감정 유형 테스트 모드 활성화됨")
+            prompt = f"""
+            사용자의 감정 변화 데이터를 기반으로, 심리테스트 결과처럼 분석해줘.
+            사용자의 감정 패턴을 재미있는 유형으로 분류하고, 그 사람의 성격을 해석해줘.
+            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자자 이내로 짧게 만들어줘!
+
+            감정 변화 데이터:
+            {request_message}
+            """
+
         # ✅ 일반적인 메시지 처리
         else:
 
-            # ✅ 질문 응답용 기본 설정
-            # auto_prompt_cmd.update({
-            #     "스타일": "이모티콘 2개이상 포함해 짧고 명확하게게",
-            #     "길이": "반드시 25자 이내",
-            #     "목적": "사용자의 질문에 알맞게 답변"
-            # })
             prompt = f"{request_message} ({auto_prompt_cmd})"
-            response_message = chat_with_openai(prompt)
+        
+        response_message = chat_with_openai(prompt)
 
         print("📢 챗봇 응답:", response_message)
         return jsonify({"response_message": Markup(response_message)})  # ✅ HTML 태그 적용
