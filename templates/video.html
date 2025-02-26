@@ -191,19 +191,7 @@
             } else {
                 updateWebcamFeed(videoId, sessionId);
             }
-            // // ✅ 추천 영상 클릭 시 필터 강제 적용
-            // if (isRecommended === "true") {
-            //     console.log("🔄 추천 영상 클릭 감지 → 필터 강제 적용");
-            //     setTimeout(() => {
-            //         updateWebcamFeed(videoId, sessionId);
 
-            //         // ✅ isRecommended 값을 false로 변경
-            //         urlParams.delete("recommended");
-            //         let newUrl = window.location.pathname + "?" + urlParams.toString();
-            //         window.history.replaceState({}, document.title, newUrl);
-            //         console.log("✅ 추천 영상 적용 후 recommended 삭제 완료:", newUrl);
-            //     }, 100);  // ✅ 0.5초 후 필터 적용
-            // }
 
             function updateWebcamFeed(videoId, sessionId) {
                 console.log("🛑비디오 id2- video:", videoId)
