@@ -6,128 +6,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>영상 재생</title>
     <style>
-      /* ✅ 전체 배경을 밝은 복숭아색 계열로 변경 */
-      body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        margin: 0;
-        padding: 20px;
-        background-color: #FFF3E0; /* 연한 복숭아색 */
-        color: #333333;
-    }
+        /* ✅ 전체 배경을 밝은 복숭아색 계열로 변경 */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #FFF3E0;
+            /* 연한 복숭아색 */
+            color: #333333;
+        }
 
-    /* ✅ 비디오 컨테이너 */
-    .video-container {
-        margin-top: 20px;
-        
-    }
+        /* ✅ 비디오 컨테이너 */
+        .video-container {
+            margin-top: 20px;
 
-    /* ✅ 뒤로 가기 링크 */
-    .back-link {
-        margin-top: 20px;
-        display: block;
-        text-align: center;
-        font-size: 30px;
-        font-weight: bold;
-        color: #E65100; /* 짙은 오렌지 */
-    }
+        }
 
-    /* ✅ 유튜브 iframe */
-    iframe {
-        width: 70%;
-        height: 450px;
-        border: none;
-    }
+        /* ✅ 뒤로 가기 링크 */
+        .back-link {
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+            color: #E65100;
+            /* 짙은 오렌지 */
+        }
 
-    /* ✅ 얼굴 감지 컨테이너 */
-    .face-detection-container {
-        position: fixed;
-        top: 0px;
-        right: 0px;
-        width: 180px;
-        height: auto;
-        z-index: 1000;
-        background: #FFF3E0; /* 연한 복숭아색 */
-              
-        border-radius: 2px;
-        border: 1px solid #ffc8b7; /* 연한 오렌지 테두리 */
-        padding: 5px;
-    }
+        /* ✅ 유튜브 iframe */
+        iframe {
+            width: 70%;
+            height: 450px;
+            border: none;
+        }
 
-    .face-detection-container img {
-        width: 100%;
-        height: auto;
-        border-radius: 5px;
-    }
+        /* ✅ 얼굴 감지 컨테이너 */
+        .face-detection-container {
+            position: fixed;
+            top: 0px;
+            right: 0px;
+            width: 180px;
+            height: auto;
+            z-index: 1000;
+            background: #FFF3E0;
+            /* 연한 복숭아색 */
 
-    /* ✅ 챗봇 컨테이너 */
-    .chatbot-container {
-        display: none;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 340px;
-        height: 640px;
-        background: #FFFFFF; /* 화이트 */
-        border: 2px solid  #ffc8b7; /* 연한 오렌지 테두리 */
-        border-radius: 10px;
-        z-index: 1000;
-        text-align: center;
-        overflow: hidden;
-    }
+            border-radius: 2px;
+            border: 1px solid #ffc8b7;
+            /* 연한 오렌지 테두리 */
+            padding: 5px;
+        }
 
-    .chatbot-container iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-        max-height: 640px;
-        overflow: hidden;
-    }
+        .face-detection-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
 
-    /* ✅ 챗봇 닫기 버튼 */
-    .chatbot-close {
-        position: absolute;
-        top: 5px;
-        right: 10px;
-        cursor: pointer;
-        font-size: 30px;
-        font-weight: bold;
-        color:  #E65100; /* 오렌지 */
-    }
+        /* ✅ 챗봇 컨테이너 */
+        .chatbot-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 340px;
+            height: 640px;
+            background: #FFFFFF;
+            /* 화이트 */
+            border: 2px solid #ffc8b7;
+            /* 연한 오렌지 테두리 */
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            overflow: hidden;
+        }
 
-    /* ✅ 감정 분석 결과 */
-    .emotion-overlay {
-        position: fixed;
-        top: 10px;
-        right: 200px;
-        font-size: 30px;
-        font-weight: bold;
-        color:  #FFF3E0; /* 연한 복숭아색 */
-        background:  #ffc8b7; /* 연한 오렌지 테두리 */
-        padding: 15px;
-        border-radius: 10px;
-        z-index: 1001;
-    }
-    .logo-text {
-    font-family: "Malgun Gothic", sans-serif; /* ✅ 맑은 고딕 폰트 적용 */
-    font-size: 35px; /* ✅ 글씨 크기 */
-    font-weight: bold; /* ✅ 두껍게 */
-    color: #E65100; /* ✅ 기본 색상 설정 (이모티콘 적용을 위해 필요) */
-    background: linear-gradient(to right, #FFB74D, #FF7043); /* ✅ 오렌지 그라디언트 효과 */
-    -webkit-background-clip: text; /* ✅ 글씨 내부에만 색상을 적용 */
-    -webkit-text-fill-color: transparent; /* ✅ 투명 텍스트로 배경 효과 */
-    text-align: center; /* ✅ 중앙 정렬 */
-    padding: 10px 20px; /* ✅ 적절한 패딩 추가 */
-    display: inline-block; /* ✅ 크기를 글자에 맞게 조정 */
-    white-space: nowrap; /* ✅ 줄바꿈 방지 */
-}
+        .chatbot-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            max-height: 640px;
+            overflow: hidden;
+        }
+
+        /* ✅ 챗봇 닫기 버튼 */
+        .chatbot-close {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 30px;
+            font-weight: bold;
+            color: #E65100;
+            /* 오렌지 */
+        }
+
+        /* ✅ 감정 분석 결과 */
+        .emotion-overlay {
+            position: fixed;
+            top: 10px;
+            right: 200px;
+            font-size: 30px;
+            font-weight: bold;
+            color: #FFF3E0;
+            /* 연한 복숭아색 */
+            background: #ffc8b7;
+            /* 연한 오렌지 테두리 */
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1001;
+        }
+
+        .logo-text {
+            font-family: "Malgun Gothic", sans-serif;
+            /* ✅ 맑은 고딕 폰트 적용 */
+            font-size: 35px;
+            /* ✅ 글씨 크기 */
+            font-weight: bold;
+            /* ✅ 두껍게 */
+            color: #E65100;
+            /* ✅ 기본 색상 설정 (이모티콘 적용을 위해 필요) */
+            background: linear-gradient(to right, #FFB74D, #FF7043);
+            /* ✅ 오렌지 그라디언트 효과 */
+            -webkit-background-clip: text;
+            /* ✅ 글씨 내부에만 색상을 적용 */
+            -webkit-text-fill-color: transparent;
+            /* ✅ 투명 텍스트로 배경 효과 */
+            text-align: center;
+            /* ✅ 중앙 정렬 */
+            padding: 10px 20px;
+            /* ✅ 적절한 패딩 추가 */
+            display: inline-block;
+            /* ✅ 크기를 글자에 맞게 조정 */
+            white-space: nowrap;
+            /* ✅ 줄바꿈 방지 */
+        }
     </style>
 </head>
 
 <body>
 
 
-    <h1  class="logo-text">영상 재생</h1>
+    <h1 class="logo-text">영상 재생</h1>
     <div class="video-container">
         <iframe id="videoFrame" src="https://www.youtube.com/embed/{{ video_id }}?autoplay=1&enablejsapi=1"
             frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
@@ -302,6 +323,14 @@
             let recommendedVideoUrl = data.recommended_video_url;
 
             console.log("📢 `postMessage()` 보내기 전에 데이터 확인:", data);
+            // ✅ 감정 데이터 `sessionStorage`에 저장 (수정된 부분)
+            sessionStorage.setItem("emotionTimeline", JSON.stringify(data.emotions_over_time));
+            sessionStorage.setItem("emotionPercentages", JSON.stringify(data.emotion_percentages));
+
+            console.log("✅ 감정 데이터 저장 완료!");
+            console.log("📊 emotionTimeline:", sessionStorage.getItem("emotionTimeline"));
+            console.log("📊 emotionPercentages:", sessionStorage.getItem("emotionPercentages"));
+
 
             // ✅ 챗봇 iframe으로 감정 분석 데이터를 직접 전달
             let chatbotFrame = document.getElementById('chatbotFrame').contentWindow;

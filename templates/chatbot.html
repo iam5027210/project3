@@ -40,6 +40,7 @@
             margin: 0;
             padding: 15px 15px 0 15px;
         }
+
         html,
         body {
             height: 100%;
@@ -96,7 +97,8 @@
             border-bottom: 4px solid white;
             align-items: center;
             justify-content: center;
-            background-color: rgb(253, 233, 233); /* 연한 복숭아색 */
+            background-color: rgb(253, 233, 233);
+            /* 연한 복숭아색 */
         }
 
         .chat .chat-header .chat-about {
@@ -175,7 +177,8 @@
 
         .chat .chat-message {
             padding: 5px 15px 0px 15px;
-            background-color: rgb(253, 233, 233); /* 연한 복숭아색 */
+            background-color: rgb(253, 233, 233);
+            /* 연한 복숭아색 */
         }
 
         .chat .chat-message textarea {
@@ -325,7 +328,6 @@
             padding: 0 10px;
             border-radius: 10px;
         }
- 
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js"></script>
 </head>
@@ -557,6 +559,21 @@
                     const formData = new FormData();
                     this.messageToSend = this.textarea.value.trim();
                     formData.append('message', this.messageToSend); // 메시지 추가
+
+                    // ✅ 감정 데이터 가져오기
+                    let emotionData = sessionStorage.getItem("emotionTimeline");
+                    let emotionPercentages = sessionStorage.getItem("emotionPercentages");
+                    console.log("📊 감정 데이터 확인:", emotionData);  // 디버깅
+                    console.log("📊 감정 비율 확인:", emotionPercentages);  // 디버깅
+
+                    if (emotionData) {
+                        formData.append("emotion_data", emotionData);
+                    }
+                    if (emotionPercentages) {
+                        formData.append("emotion_percentages", emotionPercentages);
+                    }
+
+
                     const imageFile = document.getElementById('image-upload').files[0];
                     if (imageFile) {
                         formData.append('image', imageFile);
@@ -579,6 +596,7 @@
                     showBubblePromise = this.showBubbleAfterSeconds(500)
                     waitPromise = this.waitSeconds(3500)
                     const response = await fetchResponse(formData);
+                    
                     await showBubblePromise //답변이 출력되고 버블링이 발생되는 현상 제어
                     await waitPromise  //최소 2초는 버블링
 
@@ -901,12 +919,12 @@
 
         });
 
-            // ✅ 사용자가 선택한 분석 모드를 URL에 추가하는 함수
-            function applyAnalysisMode(videoUrl, mode) {
-                let updatedUrl = `${videoUrl}&analysis_mode=${mode}`;
-                console.log("📢 선택된 분석 모드:", mode);
-                window.top.location.href = updatedUrl;  // ✅ 선택된 모드로 URL 이동
-            }
+        // ✅ 사용자가 선택한 분석 모드를 URL에 추가하는 함수
+        function applyAnalysisMode(videoUrl, mode) {
+            let updatedUrl = `${videoUrl}&analysis_mode=${mode}`;
+            console.log("📢 선택된 분석 모드:", mode);
+            window.top.location.href = updatedUrl;  // ✅ 선택된 모드로 URL 이동
+        }
 
 
     </script>

@@ -1,0 +1,85 @@
+ 
+    /* ✅ 웹캠 스트리밍 컨테이너 */
+    #webcam-container {
+        text-align: center;
+        margin-bottom: 20px;
+        
+        
+    }
+
+
+
+ssh root@157.157.221.29 -p 20965 -i ~/.ssh/id_ed25519
+
+mkdir -p /miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /miniconda3/miniconda.sh
+bash /miniconda3/miniconda.sh -b -u -p /miniconda3
+rm /miniconda3/miniconda.sh
+source /miniconda3/bin/activate
+
+
+
+conda deactivate
+source deepface_env/bin/activate
+pip install -r /EK/requirements/pip_requirements_deepface_pj_df.txt
+
+conda install --file requirement_deepface_pj_df.txt
+
+sed -i '/dnspython/d' pip_requirements_deepface_pj_df.txt
+
+
+## 런팟에서 가상환경 만드는 명령어
+conda create -n deepface_env python=3.8 -y
+conda activate deepface_env
+pip install pymongo sniffio dnspython
+pip install tensorflow-io-gcs-filesystem
+conda install --file requirement_deepface_pj_df.txt
+pip install -r pip_requirements_deepface_pj_df.txt
+
+pip install --no-deps -r pip_requirements_deepface_pj_df.txt
+pip install --no-deps --no-cache-dir -r pip_requirements_deepface_pj_df.txt
+pip install --user -r pip_requirements_deepface_pj_df.txt
+conda install --user --file requirement_deepface_pj_df.txt
+
+
+
+#3 requirement.txt 에서 오류나는 문구 삭제
+sed -i '/pymongo/d' pip_requirements_deepface_pj_df.txt
+sed -i '/sniffio/d' pip_requirements_deepface_pj_df.txt
+sed -i '/dnspython/d' pip_requirements_deepface_pj_df.txt
+sed -i '/blinker==1.9.0/d' pip_requirements_deepface_pj_df.txt
+
+
+conda deactivate  # 가상환경 비활성화
+conda remove --name dpface_env --all  # deepface_env1만 삭제
+conda create -n dpface_env python=3.8 -y  # 새 환경 생성
+source /miniconda3/bin/activate dpface_env  # 강제 활성화
+
+
+pip show tensorflow
+
+
+conda install -y --name dpface_env \
+  ca-certificates=2025.1.31 \
+  tzdata=2025a \
+  ucrt=10.0.22621.0 \
+  vc14_runtime=14.42.34433 \
+  vs2015_runtime=14.42.34433 \
+  vc=14.42 \
+  openssl=3.4.1 \
+  sqlite=3.45.3 \
+  python=3.9.21 \
+  python_abi=3.9 \
+  setuptools=75.8.0 \
+  sniffio=1.3.1 \
+  wheel=0.45.1 \
+  dnspython=2.7.0 \
+  pip=25.0 \
+  pymongo=4.11
+
+
+
+7가지 표정이 인식되는것을 이미지로 캡처
+배포 준비..?
+금요일 .... 되는데까지 ...링크
+

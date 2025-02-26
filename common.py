@@ -27,14 +27,23 @@ with open(api_key_path, 'r') as file:
 model = Model();    
 client = OpenAI(api_key=api_key, timeout=30, max_retries=1)
 
-def chat_with_openai(message):
+def chat_with_openai(message,emotion_data=None, emotion_percentages=None):
     """ OpenAI GPT API를 사용하여 챗봇 대화 수행 """
     try:
+        prompt = f"""
+        사용자 메시지: {message}
+        감정 변화 데이터: {emotion_data}
+        감정 비율: {emotion_percentages}
+
+        사용자의 감정 변화를 분석하여 가장 적절한 응답을 생성해줘.
+        유머러스하면서도 친근한 톤을 유지하면서 짧게 답변해줘.
+        """
+
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # ✅ GPT-3.5 사용 (비용 절감)
             messages=[
-                {"role": "system", "content": "너는 찐반응 딜리버리봇으로, 사용자의 표정 분석 결과를 유머러스하게 1줄로 짧게 전달하는 챗봇이야."},
-                {"role": "user", "content": message}
+                {"role": "system", "content": "너는 찐반응 딜리버리봇으로, 사용자의 표정 분석 결과를 유머러스하게 1줄로 짧게 전달하는 챗봇이야. 사용자가 표정분석결과에 대해 질문하면, 표정변화 데이터를 바탕으로 적절하게 답변해줘."},
+                {"role": "user", "content": prompt}
             ],
             max_tokens=40
         )
