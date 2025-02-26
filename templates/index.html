@@ -73,8 +73,17 @@
 
     /* ✅ 웹캠 스트리밍 컨테이너 */
     #webcam-container {
-        text-align: center;
-        margin-bottom: 20px;
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        width: 170px;
+        height: auto;
+        z-index: 1000;
+        background: #FFF3E0; /* 연한 복숭아색 */
+              
+        border-radius: 2px;
+        border: 1px solid #ffc8b7; /* 연한 오렌지 테두리 */
+        padding: 5px;
         
         
     }
@@ -98,6 +107,7 @@
     -webkit-text-fill-color: initial; /* ✅ 이모티콘을 원래 색상으로 보이게 설정 */
 }
 
+
     </style>
 </head>
 
@@ -111,7 +121,7 @@
 
     <!-- ✅ 웹캠 스트리밍 컨테이너 (기본적으로 보이도록 설정) -->
     <div id="webcam-container">
-        <img id="webcam-feed" src="" style="width:200px; height:auto; border-radius:10px;">
+        <img id="webcam-feed" src="" style="width:170px; height:auto; border-radius:10px;">
     </div>
 </div>
     <div class="video-container">
