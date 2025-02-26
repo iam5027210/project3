@@ -133,6 +133,12 @@ def chat_api():
     request_message = request.form.get("message")  
     analysis_mode = request.form.get("analysis_mode", request.args.get("analysis_mode", None))  # ✅ POST + GET 지원 
     print(f"📢 수신된 메시지: {request_message}, 현재 분석 모드: {analysis_mode}")
+    emotion_data = request.form.get("emotion_data")
+    emotion_percentages = request.form.get("emotion_percentages")
+    print(f"📢 사용자 메시지: {request_message}")
+    print(f"📊 감정 변화 데이터: {emotion_data}")
+    print(f"📊 감정 퍼센트 데이터: {emotion_percentages}")
+
 
         # ✅ GPT 요청 중복 실행 방지
     if session.get("last_message") == request_message:
@@ -148,7 +154,7 @@ def chat_api():
             "어투": "반말 사용 금지",
             "스타일": "유머러스하게",
             "길이": "짧게, 1줄로",
-            "목적": "사용자의 질문에 알맞게 답변"
+            "목적": "사용자의 질문에 알맞게 답변해줘"
         }
         
         
@@ -165,7 +171,7 @@ def chat_api():
             prompt = f"""
             사용자의 감정 변화 데이터를 기반으로, MBTI 스타일 분석을 해줘.
             사용자의 감정 패턴을 MBTI 유형처럼 분류하고, 성격을 해석해줘.
-            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자자 이내로 짧게 만들어줘!
+            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자 이내로 짧게 만들어줘!
 
             감정 변화 데이터:
             {request_message}
@@ -191,7 +197,7 @@ def chat_api():
             prompt = f"""
             사용자의 감정 변화 데이터를 기반으로, 심리테스트 결과처럼 분석해줘.
             사용자의 감정 패턴을 재미있는 유형으로 분류하고, 그 사람의 성격을 해석해줘.
-            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자자 이내로 짧게 만들어줘!
+            유머러스한 방식으로 작성해줘. 이모티콘도 적절히 추가하고, 1줄로 20자 이내로 짧게 만들어줘!
 
             감정 변화 데이터:
             {request_message}
@@ -200,7 +206,13 @@ def chat_api():
         # ✅ 일반적인 메시지 처리
         else:
 
-            prompt = f"{request_message} ({auto_prompt_cmd})"
+            prompt = f"""
+            사용자의 감정 변화를 참고하여 적절한 답변을 생성해줘.
+            적절한 맥락과 감정을 고려하여 유머러스하고 친근하게 답변하고, 1줄로 20자 이내로 짧게 작성해줘
+            - 사용자의 감정 변화 데이터: {emotion_data}
+            - 감정 비율: {emotion_percentages}
+            - 사용자가 보낸 메시지: {request_message}
+            - {auto_prompt_cmd}"""
         
         response_message = chat_with_openai(prompt)
 
