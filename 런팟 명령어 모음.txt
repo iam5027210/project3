@@ -82,4 +82,4 @@ conda install -y --name dpface_env \
 7가지 표정이 인식되는것을 이미지로 캡처
 배포 준비..?
 금요일 .... 되는데까지 ...링크
-
+cp /workspace/models/best_vggface_model.h5 /workspace/models_backup/best_vggface_model_backup_epho3.h5
