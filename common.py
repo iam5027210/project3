@@ -36,16 +36,16 @@ def chat_with_openai(message,emotion_data=None, emotion_percentages=None):
         감정 비율: {emotion_percentages}
         (중요!)사용자 메시지를 먼저 확인 하여, 답변 모드가 있는지 확인하고,
         답변모드가 있으면 답변 모드에 맞게 답변을 해줘.
-        답변모드가 없으면, 감정분석 결과를 바탕으로 재미있는 시를 작성하고 시적표현으로 사용자에게 다른 영상을 보도록 유도해줘.
+        답변모드가 없으면, 질문에 맞는 대답과 함께 사용자에게 챗봇 상단에 제공된 버튼을 눌러 영상을 보도록 유도해줘.
         """
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # ✅ GPT-3.5 사용 (비용 절감)
             messages=[
-                {"role": "system", "content": "너 이름은 '찐반응 감성시봇'으로, 사용자 질문에 맞는 답변을 유머러스한 짧은 시를 만들어주는 챗봇이야. 사용자가 질문하면, 감정변화 데이터와 감정비율 데이터터를 바탕으로 재밌게 시 스타일로 답변해줘."},
+                {"role": "system", "content": "너 이름은 '찐반응 딜리버리봇'으로, 사용자 질문에 맞는 답변을 유머러스하고 친절하게 답변하는챗봇이야. 사용자가 질문하면, 감정변화 데이터와 감정비율 데이터터를 바탕으로 재밌게 답변해줘."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100
+            max_tokens=120
         )
         return response.choices[0].message.content  # ✅ 올바른 방식으로 응답 추출
     except Exception as e:

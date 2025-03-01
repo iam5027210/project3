@@ -18,6 +18,38 @@ from markupsafe import Markup  # ✅ Flask가 아닌 markupsafe에서 가져오�
 from deepface import DeepFace
 from PIL import ImageFont, ImageDraw, Image
 from flask_session import Session  # ✅ 세션 저장을 위한 Flask-Session 추가
+from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import InputLayer
+from tensorflow.keras.optimizers import Adam
+
+try:
+    print("🔍 감정 분석 모델 로드 중...")
+    MODEL_PATH = "models/final_vggface_wgtImgNet_finetune_0228.h5_e10.h5"
+    
+    # ✅ InputLayer를 명시적으로 추가하여 `batch_shape` 오류 방지
+    emotion_model = load_model(MODEL_PATH, custom_objects={"InputLayer": InputLayer})
+
+    # ✅ 모델이 제대로 로드되었는지 확인
+    print("✅ 감정 분석 모델 로드 완료!")
+
+    # ✅ 모델을 다시 컴파일 (튜닝 시 사용한 설정 유지)
+    emotion_model.compile(
+        optimizer=Adam(learning_rate=0.0001),  # 🔹 튜닝 시 사용한 optimizer 적용
+        loss="categorical_crossentropy",  # 🔹 튜닝 시 사용한 loss 적용
+        metrics=["accuracy"]  # 🔹 튜닝 시 사용한 metrics 적용
+    )
+    print("✅ 모델 컴파일 완료!")
+    
+except Exception as e:
+    print(f"❌ 모델 로드 실패: {e}")
+    exit(1)  # 실행 종료
+
+# # ✅ VGGFace 기반 감정 분석 모델 로드
+
+# emotion_model = load_model(MODEL_PATH)
+
+# # ✅ 감정 클래스 레이블 (새 모델 기준)
+emotion_labels = ["anger", "happy", "normal", "panic", "sadness"]
 
 
 # ✅ 한글 & 이모티콘 지원을 위한 폰트 설정
@@ -217,13 +249,39 @@ def chat_api():
             감정 변화 데이터:
             {request_message}
             """
-
+        elif analysis_mode == "poem":
+            print("🔹 찐반응 시인봇 모드 활성화됨")
+            prompt = f"""
+            [답변 모드 : 찐반응 시인봇 모드]너는 용자의 표정 변화 데이터를 기반으로 **재미있고 감성적인 시**를 지어줘.
+            짧고 리듬감 있는 문장으로 감정을 표현하고, 유머를 추가하면 더 좋아.  
+            각 줄마다 ✨이모티콘✨을 적절히 넣어서 감성을 살려줘.
+            
+            💡 **포맷 예시**
+            📝 "기쁨이 있는 그대 얼굴 또 보고 싶은데, 😆  
+            놀람이 찾아와 나를 놀라게 하네 😲  
+            슬픔이 지나가며 아픈 그대 마음 😢  
+            그대 얼굴은 감정의 폭풍으로 휘몰아치네 🌪️"
+    
+            감정 변화 데이터:
+            {request_message}
+            """
         # ✅ 일반적인 메시지 처리
         else:
 
             prompt = f"""
-            사용자의 감정 변화를 분석하고, 유머러스하게 시를 만들어줘.
+            사용자가 질문이 있는지 먼저 확인 후, 질문에 맞는 대답을 해줘.
+            사용자 질문이 없으면, 사용자의 감정 변화를 분석해서 가장 높은 감정을 바탕으로 '감정변화 분석 답변'을 간단하게 작성해줘.
             1줄로 20자 이내로 짧게 작성해줘
+            
+            **감정변화 분석 답변 포맷 예시**
+            - "웃음이 60% 라니, 이 영상, 개그 고수 인정? 😆"
+            - "슬픔이 70%라니, 눈물 짓게 한 영상이었죠? 이젠 웃을 시간! 다음 영상 GO!" 
+            - "놀람 80%! 무슨 일이죠? 😱 헉! 심장 괜찮아요? 😱"  
+            - "중립 90%?! 감정 컨트롤 무엇? 무표정 고수 등장! 😐"
+            - "분노 70%?! 분노 게이지 MAX! 진정하세요~"  
+
+            ** 사용자의 질문 여부 확인 후, 답변 생성!**
+
             - 사용자의 감정 변화 데이터: {emotion_data}
             - 감정 비율: {emotion_percentages}
             - 사용자가 보낸 메시지: {request_message}
@@ -251,14 +309,13 @@ face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, min_
 # ✅ 영어 감정 분석 결과 → 한글 + 이모티콘 변환
 emotion_translation = {
     "angry": "화남",
-    "disgust": "역겨움",
-    "fear": "두려움",
+    #"disgust": "역겨움",
+    #"fear": "두려움",
     "happy": "웃음",
-    "sad": "슬픔",
-    "surprise": "놀람",
-    "neutral": "중립"
+    "sadness": "슬픔",
+    "panic": "놀람",
+    "normal": "중립"
 }
-
 
 
 def save_face_data(original_frame,emotion, landmarks,video_id="unknown", session_id="default_session"):
@@ -305,6 +362,44 @@ def save_face_data(original_frame,emotion, landmarks,video_id="unknown", session
     print("✅ 얼굴 데이터 & 랜드마크, 감정 분석 결과 저장 완료(video.html에서만 저장)")
 
 
+def analyze_emotion_with_vggface(face_roi):
+    """ VGGFace 기반 감정 분석 """
+    try:
+        if face_roi is None or face_roi.size == 0:
+            print("⚠ 감정 분석 실패: face_roi가 비어 있음")
+            return "해석 불가"
+
+        # ✅ 이미지 전처리
+        #print(f"📷 얼굴 감정 분석 중... 입력 크기: {face_roi.shape}")  # 입력 데이터 확인
+        face_roi = cv2.resize(face_roi, (224, 224))  # 모델 입력 크기에 맞춤
+        face_roi = np.expand_dims(face_roi, axis=0)  # 배치 차원 추가
+        face_roi = face_roi / 255.0  # 정규화
+
+        # ✅ 모델 예측 수행
+        preds = emotion_model.predict(face_roi)[0]  
+        #print(f"📊 감정 분석 결과: {preds}")  # 모델 출력 확인
+
+        emotion_idx = np.argmax(preds)
+        #print(f"🎭 감정 인덱스: {emotion_idx}")  # 감정 인덱스 확인
+
+        # ✅ 감정 레이블이 제대로 정의되어 있는지 확인
+        if 'emotion_labels' not in globals():
+            print("⚠ 감정 분석 실패: emotion_labels가 정의되지 않음")
+            return "해석 불가"
+
+        predicted_emotion = emotion_labels[emotion_idx]
+
+        # ✅ 영어 감정을 한글로 변환하여 반환
+        translated_emotion = emotion_translation.get(predicted_emotion, "해석 불가")
+
+        print(f"✅ 감정 분석 결과 (한글 변환됨): {translated_emotion}")
+
+        return translated_emotion  # ✅ 한글 변환된 감정 반환
+
+    except Exception as e:
+        print(f"⚠ 감정 분석 실패: {e}")
+        return "해석 불가"
+
 
 
 
@@ -340,19 +435,13 @@ def apply_filter(frame):
             white_background[y:y+h_box, x:x+w_box] = face_roi
             
 
-            # ✅ 4. DeepFace 감정 분석 수행, # ✅ 감정 분석 실행 (한글 변환 적용)
-            emotion_result = analyze_emotion_with_deepface(face_roi)
+            # ✅ 4. DeepFace 감정 분석 수행, # ✅ 감정 분석 실행 (한글 변환 적용) ==> 튜닝 모델 적용
+            #emotion_result = analyze_emotion_with_deepface(face_roi)
+            emotion_result = analyze_emotion_with_vggface(face_roi)
+            #✅ 영어 감정 결과를 한글로 변환#
+            #emotion_result_kor = emotion_translation.get(emotion_result, "해석 불가")
 
-            # # ✅ 글자 크기(Font Scale) & 색상(BGR 값) 수정
-            # font_scale = 1.5  # 글자 크기 키우기
-            # font_color = (0, 166, 255)  # 글자 색상 (BGR: )
-            # thickness = 3  # 글자 두께 증가
-
-            # # ✅ 5. 감정 분석 결과를 화면에 표시
-            # cv2.putText(white_background, f"{emotion_result.upper()}", 
-            #             (x, y - 20), cv2.FONT_HERSHEY_SIMPLEX, 
-            #             font_scale, font_color, thickness, cv2.LINE_AA)
-            
+           
 
             # # ✅ OpenCV 대신 Pillow로 한글 & 이모티콘 출력
             frame_pil = Image.fromarray(white_background)  # OpenCV → PIL 변환
@@ -494,6 +583,7 @@ def close_resources():
 @app.route('/video_feed/<video_id>/<session_id>')
 def video_feed(video_id, session_id):
     """ 영상 ID와 세션 ID를 전달하여 프레임 생성 """
+    global emotion_model # ✅ 전역 변수 사용하여 모델이 다시 로드되지 않도록 함.
     print(f"📷 웹캠 스트리밍 요청 - video_id: {video_id}, session_id: {session_id}")
     return Response(generate_frames(video_id, session_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 # @app.route('/video_feed')
@@ -543,6 +633,12 @@ def get_emotion_analysis(video_id, session_id):
 
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
 
+if __name__ == '__main__':
+    try:
+        print("🚀 Flask 서버 시작 중...")
+        #app.run(debug=False, use_reloader=False,threaded=False) # ✅ 멀티스레딩 비활성화
+        app.run(debug=False) # ✅ 멀티스레딩 비활성화
+    except Exception as e:
+        print(f"❌ Flask 실행 중 오류 발생: {e}")
+        traceback.print_exc()  # ✅ 예외의 전체 트레이스백을 출력
