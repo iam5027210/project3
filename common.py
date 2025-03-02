@@ -93,7 +93,7 @@ def currTime():
 
 # ✅ MongoDB 연결
 mongo_cluster = MongoClient("mongodb+srv://admin:admin1234@cluster0.uvix1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = mongo_cluster["jjinchin"]  # ✅ "jjinchin" 데이터베이스 선택
+db = mongo_cluster["wassup3"]  # ✅ "wassup3" 데이터베이스 선택
 video_collection = db["videos"]  # ✅ "videos" 컬렉션 선택
 face_collection = db["faces"]
 

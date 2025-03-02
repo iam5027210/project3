@@ -92,7 +92,7 @@ Session(app)  # ✅ 세션 적용
 
 # ✅ MongoDB 연결
 mongo_cluster = MongoClient("mongodb+srv://admin:admin1234@cluster0.uvix1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = mongo_cluster["jjinchin"]  # ✅ "jjinchin" 데이터베이스 선택
+db = mongo_cluster["wassup3"]  # ✅ "jjinchin" 데이터베이스 선택
 video_collection = db["videos"]  # ✅ "videos" 컬렉션 선택
 face_collection = db["faces"]
 
@@ -630,6 +630,64 @@ def get_emotion_analysis(video_id, session_id):
         "emotion_percentages": emotion_percentages,
         "recommended_video_url": recommended_video_url,  # ✅ 추천 영상 URL 추가!
     })
+
+@app.route('/get_video_emotion_stats')
+def get_video_emotion_stats():
+    """ MongoDB에서 모든 영상의 감정 통계를 가져와 정렬하여 반환 """
+
+    # ✅ 모든 영상 목록 가져오기 (감정 데이터 없는 영상도 포함)
+    all_videos = list(video_collection.find({}, {"_id": 0, "url": 1, "title": 1}))
+
+    # ✅ 감정 데이터 가져오기
+    pipeline = [
+        {"$group": {"_id": "$video_id", "emotions": {"$push": "$emotion"}}}
+    ]
+    results = list(face_collection.aggregate(pipeline))
+
+    # ✅ 감정 통계 계산
+    video_emotion_stats = {}
+    video_total_counts = {}  # ✅ 각 영상별 총 감정 데이터 개수 저장
+
+    excluded_emotions = {"중립", "두려움", "해석 불가"}
+
+    for entry in results:
+        video_id = entry["_id"]
+        emotion_list = entry["emotions"]
+
+        emotion_counts = {}
+        for emotion in emotion_list:
+            if emotion not in excluded_emotions:
+                emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
+        
+        video_total_counts[video_id] = sum(emotion_counts.values())
+
+        total = video_total_counts[video_id]
+        if total > 0:
+            emotion_percentages = {
+                emotion: round((count / total) * 100, 2) 
+                for emotion, count in sorted(emotion_counts.items(), key=lambda x: x[1], reverse=True)
+            }
+        else:
+            emotion_percentages = {}
+
+        video_emotion_stats[video_id] = emotion_percentages
+
+    # ✅ 영상 ID -> 제목 매핑
+    video_titles = {video["url"].split("?v=")[-1]: video["title"] for video in all_videos}
+
+    # ✅ 감정 데이터 없는 영상도 포함하여 title 추가
+    sorted_videos = []
+    for video in all_videos:
+        video_id = video["url"].split("?v=")[-1].split("&")[0]
+        title = video.get("title", "제목 없음")
+        emotions = video_emotion_stats.get(video_id, {})
+        sorted_videos.append({"video_id": video_id, "title": title, "emotions": emotions})
+
+    # ✅ 감정 데이터 개수가 많은 순으로 정렬
+    sorted_videos.sort(key=lambda x: video_total_counts.get(x["video_id"], 0), reverse=True)
+
+    return jsonify({"sorted_videos": sorted_videos})
+
 
 
 
