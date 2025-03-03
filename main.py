@@ -24,7 +24,12 @@ from tensorflow.keras.optimizers import Adam
 
 try:
     print("🔍 감정 분석 모델 로드 중...")
-    MODEL_PATH = "models/final_vggface_wgtImgNet_finetune_0228.h5_e10.h5"
+    #MODEL_PATH = "models/final_vggface_wgtImgNet_finetune_0228_e10.h5" #하이퍼파라미터 튜닝 1
+    #MODEL_PATH = "models/final_vggface_wgtImgNet_finetune2_tgt80_0302.h5" # 하이퍼파라미터 튜닝 2
+    #MODEL_PATH = "models/best_vggface_model_backup_epoch3.h5" # VGG imagenet 가중치적용 only
+    MODEL_PATH = "models/best_vggface_wgtImgNet_finetune3_epoch2-tgt75_0302.h5" # 하이퍼파라미터 튜닝 4 (정확도 75% validation 기준)
+    #MODEL_PATH = "models/best_vggface_wgtImgNet_finetune3_tgt78_0302.h5" # 하이퍼파라미터 튜닝 3 (정확도 78% 타겟)
+
     
     # ✅ InputLayer를 명시적으로 추가하여 `batch_shape` 오류 방지
     emotion_model = load_model(MODEL_PATH, custom_objects={"InputLayer": InputLayer})
@@ -274,7 +279,7 @@ def chat_api():
             1줄로 20자 이내로 짧게 작성해줘
             
             **감정변화 분석 답변 포맷 예시**
-            - "웃음이 60% 라니, 이 영상, 개그 고수 인정? 😆"
+            - "웃음이 60% 라니, 이 영상, 재미있었음 인정? 😆"
             - "슬픔이 70%라니, 눈물 짓게 한 영상이었죠? 이젠 웃을 시간! 다음 영상 GO!" 
             - "놀람 80%! 무슨 일이죠? 😱 헉! 심장 괜찮아요? 😱"  
             - "중립 90%?! 감정 컨트롤 무엇? 무표정 고수 등장! 😐"

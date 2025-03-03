@@ -12,9 +12,9 @@
             text-align: center;
             margin: 0;
             padding: 20px;
-            background-color: #FFF3E0;
+            background-color: #000000;
             /* 연한 복숭아색 */
-            color: #333333;
+            color: #303030;
         }
 
 
@@ -24,9 +24,10 @@
             font-size: 36px;
             font-weight: bold;
             letter-spacing: 1px;
-            color: #3b3b3b;
+            color: #FFFFFF;
             /* 오렌지 */
             margin-bottom: 30px;
+            text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
         }
 
         /* ✅ 비디오 목록 */
@@ -49,7 +50,7 @@
             padding: 15px;
             background: #FFFFFF;
             border-radius: 12px;
-            border: 2px solid #ffc8b7;
+            border: 2px solid #000000;
             transition: transform 0.2s ease-in-out;
             width: 100%;
             max-width: 250px;
@@ -113,11 +114,11 @@
             width: 170px;
             height: auto;
             z-index: 1000;
-            background: #FFF3E0;
+            background: #000000;
             /* 연한 복숭아색 */
 
             border-radius: 2px;
-            border: 1px solid #ffc8b7;
+            border: 1px solid #000000;
             /* 연한 오렌지 테두리 */
             padding: 5px;
 
@@ -126,33 +127,32 @@
 
         .logo-text {
             font-family: "Malgun Gothic", sans-serif;
-            /* ✅ 맑은 고딕 폰트 적용 */
-            font-size: 35px;
-            /* ✅ 글씨 크기 */
+            font-size: 40px;
+            /* 글씨 크기 키우기 */
             font-weight: bold;
-            /* ✅ 두껍게 */
-            color: #E65100;
-            /* ✅ 기본 색상 설정 (이모티콘 적용을 위해 필요) */
-            background: linear-gradient(to right, #FFB74D, #FF7043);
-            /* ✅ 오렌지 그라디언트 효과 */
-            -webkit-background-clip: text;
-            /* ✅ 글씨 내부에만 색상을 적용 */
-            -webkit-text-fill-color: transparent;
-            /* ✅ 투명 텍스트로 배경 효과 */
             text-align: center;
-            /* ✅ 중앙 정렬 */
-            padding: 10px 20px;
-            /* ✅ 적절한 패딩 추가 */
+            padding: 15px 25px;
             display: inline-block;
-            /* ✅ 크기를 글자에 맞게 조정 */
             white-space: nowrap;
-            /* ✅ 줄바꿈 방지 */
+            letter-spacing: 2px;
+
+            /* ✅ FacePick 강조 */
+            color: #FFD700;
+            /* 골드 색상 */
+            text-shadow: 0px 4px 12px rgba(255, 215, 0, 0.6);
+            /* 은은한 네온 효과 */
+
+            /* ✅ 전체 텍스트에 그라디언트 효과 */
+            background: linear-gradient(to right, #FF9800, #FF5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
+
         /* ✅ 이모티콘이 원래 색상을 유지하도록 추가 스타일 적용 */
+        /* ✅ 이모티콘 색상 유지 */
         .logo-text span {
             -webkit-text-fill-color: initial;
-            /* ✅ 이모티콘을 원래 색상으로 보이게 설정 */
         }
 
 
@@ -205,7 +205,8 @@
 <body>
     <div class="title-container"></div>
     <h1 class="logo-text">
-        <span>🎭</span> 표정으로 알아보는 <span>🎥</span> 스트리밍 찐반응 <span>😆🤣</span>
+        <span>📸</span> FacePick : 표정으로 평가하는 <span>🎥</span> 스트리밍 찐반응 <span>😊🎭</span>
+
     </h1>
 
 
@@ -344,16 +345,20 @@
                         let videoElement = document.createElement("div");
                         videoElement.classList.add("video");
 
+
                         videoElement.innerHTML = `
-                <a class="video-link" href="/video/${videoId}?session_id=">
+                    <a class="video-link" href="/video/${videoId}?session_id=">
                     <img src="${videoThumbnail}" alt="${videoTitle}">
                     <p class="video-title">${videoTitle}</p>  <!-- ✅ 제목 위치 고정 -->
                 </a>
                 <div class="emotion-stats">${statsHtml}</div>
-            `;
+                `;
 
                         videoContainer.appendChild(videoElement);
                     });
+                    // ✅ 비디오 목록이 추가된 후 `updateVideoLinks` 호출하여 `session_id` 추가
+                    updateVideoLinks(sessionStorage.getItem("session_id"));
+
                 })
                 .catch(error => console.error("❌ 감정 통계 데이터 요청 실패:", error));
 
